@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0B0B0C;
+    --bg-panel: #111113;
+    --bg-card: #18181B;
+    --border-subtle: #2A2A2E;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A1A1AA;
+    --text-muted: #6B7280;
+    --accent: #3B82F6;
+    --risk-healthy: #22C55E;
+    --risk-warning: #EAB308;
+    --risk-danger: #EF4444;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-panel);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#18181B] border border-[#2A2A2E] rounded-xl;
+  }
+
+  .panel {
+    @apply bg-[#111113] border border-[#2A2A2E] rounded-xl;
+  }
+
+  .btn-primary {
+    @apply bg-accent text-white font-medium px-4 py-2 rounded-lg
+           hover:bg-blue-500 active:scale-[0.98] transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply text-[#A1A1AA] font-medium px-4 py-2 rounded-lg
+           hover:bg-[#18181B] hover:text-white active:scale-[0.98] transition-all duration-150
+           border border-[#2A2A2E];
+  }
+
+  .btn-danger {
+    @apply bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20 font-medium px-4 py-2 rounded-lg
+           hover:bg-[#EF4444]/20 active:scale-[0.98] transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full bg-[#0B0B0C] border border-[#2A2A2E] rounded-lg px-3 py-2.5
+           text-white placeholder:text-[#6B7280] font-mono text-sm
+           focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20
+           transition-colors duration-150;
+  }
+
+  .select-field {
+    @apply w-full bg-[#0B0B0C] border border-[#2A2A2E] rounded-lg px-3 py-2.5
+           text-white text-sm appearance-none cursor-pointer
+           focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20
+           transition-colors duration-150;
+  }
+
+  .label {
+    @apply text-xs font-medium text-[#6B7280] uppercase tracking-wider;
+  }
+
+  .stat-value {
+    @apply text-2xl font-display font-bold text-white;
+  }
+
+  .stat-label {
+    @apply text-xs text-[#6B7280] mt-0.5;
+  }
+
+  .tag {
+    @apply text-xs px-2 py-0.5 rounded-full border font-medium;
+  }
+
+  .tag-active {
+    @apply tag bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/20;
+  }
+
+  .tag-inactive {
+    @apply tag bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/20;
+  }
+
+  .divider {
+    @apply border-t border-[#2A2A2E];
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    @apply bg-[#18181B] animate-pulse rounded;
+  }
+
+  /* Mono numbers */
+  .num {
+    @apply font-mono;
+  }
+}
+
+/* Risk indicator glow */
+.risk-healthy { color: var(--risk-healthy); }
+.risk-warning { color: var(--risk-warning); }
+.risk-danger  { color: var(--risk-danger); }
+
+.risk-dot-healthy { background: var(--risk-healthy); box-shadow: 0 0 6px var(--risk-healthy); }
+.risk-dot-warning { background: var(--risk-warning); box-shadow: 0 0 6px var(--risk-warning); }
+.risk-dot-danger  { background: var(--risk-danger);  box-shadow: 0 0 6px var(--risk-danger); }
+
+/* Noise texture overlay */
+.noise::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+}
+
+/* Grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}

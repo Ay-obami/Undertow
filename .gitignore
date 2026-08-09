@@ -1,0 +1,34 @@
+# Compiler files
+cache/
+out/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Docs
+docs/
+
+# Dotenv file
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Dependencies
+node_modules/
+dist/
+
+# Foundry git-submodule dependencies.
+# These are declared in .gitmodules + contracts/foundry.lock and are restored
+# with `forge install` (or `git submodule update --init --recursive`), so they
+# are not tracked here. NOTE: contracts/lib/flare-periphery IS tracked, because
+# it is a soldeer dependency that `forge install` cannot restore.
+contracts/lib/forge-std/
+contracts/lib/openzeppelin-contracts/
+contracts/lib/chainlink-brownie-contracts/
+contracts/lib/account-abstraction/
+
+#boilerplate contract
+Lending_Borrowing_Protocol/src/core/mockCode.sol

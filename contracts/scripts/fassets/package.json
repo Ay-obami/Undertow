@@ -1,0 +1,20 @@
+{
+  "name": "fxrp-mint-scripts",
+  "private": true,
+  "description": "Standalone Node/TS scripts implementing the FAssets mint-FXRP flow against Coston2 (reserve collateral -> pay XRP on XRPL testnet -> FDC proof -> execute minting).",
+  "type": "module",
+  "scripts": {
+    "reserve": "tsx reserveCollateral.ts",
+    "pay": "tsx xrpPayment.ts",
+    "execute": "tsx executeMinting.ts"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "xrpl": "^4.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
