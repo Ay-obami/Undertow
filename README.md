@@ -54,8 +54,13 @@ follows here is the short version.
 
 ### Contracts
 
+Use Foundry v1.8.3, matching CI. From the repository root, initialize the
+pinned dependencies before building:
+
 ```bash
+git submodule update --init --recursive
 cd contracts
+forge fmt --check
 forge build
 forge test
 # Local node

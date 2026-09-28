@@ -25,7 +25,7 @@ abstract contract SupplyModule is PoolStorage {
 
         DataTypes.ReserveData storage reserve = _getReserve(reserveId);
         reserve.assertActive();
-        reserve.updateIndexes();          // accrue interest before cap check (bug fix)
+        reserve.updateIndexes(); // accrue interest before cap check (bug fix)
         reserve.assertSupplyCap(amount);
 
         // Compute scaled deposit for this user
@@ -50,10 +50,7 @@ abstract contract SupplyModule is PoolStorage {
         reserve.assertActive();
         reserve.updateIndexes();
 
-        uint256 userReal = MathLib.toReal(
-            _scaledDeposits[reserveId][msg.sender],
-            reserve.supplyLiquidityIndex
-        );
+        uint256 userReal = MathLib.toReal(_scaledDeposits[reserveId][msg.sender], reserve.supplyLiquidityIndex);
         require(userReal >= amount, "SupplyModule: insufficient balance");
 
         uint256 scaledBurnt = MathLib.toScaled(amount, reserve.supplyLiquidityIndex);
@@ -71,10 +68,7 @@ abstract contract SupplyModule is PoolStorage {
     // ================================================================
 
     /// @notice Current (accrued) deposit balance — pure view, no state write.
-    function _getUserDepositBalance(
-        bytes32 reserveId,
-        address user
-    ) internal  returns (uint256) {
+    function _getUserDepositBalance(bytes32 reserveId, address user) internal returns (uint256) {
         DataTypes.ReserveData storage reserve = _reserves[reserveId];
         reserve.updateIndexes();
         return MathLib.toReal(_scaledDeposits[reserveId][user], reserve.supplyLiquidityIndex);

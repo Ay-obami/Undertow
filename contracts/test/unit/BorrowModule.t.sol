@@ -35,7 +35,7 @@ contract BorrowModuleTest is PoolTestBase {
         _deposit(bob, WETH_ID, address(weth), 10e18);
         uint256 depositBefore = pool.getUserDepositBalance(WETH_ID, bob);
         _borrow(bob, WETH_ID, USDT_ID, 5_000e18, 0.1e18);
-        uint256 depositAfter  = pool.getUserDepositBalance(WETH_ID, bob);
+        uint256 depositAfter = pool.getUserDepositBalance(WETH_ID, bob);
         assertLt(depositAfter, depositBefore);
     }
 
@@ -45,7 +45,7 @@ contract BorrowModuleTest is PoolTestBase {
 
         DataTypes.Position[] memory positions = pool.getUserPositions(bob);
         assertEq(positions.length, 1);
-        assertEq(positions[0].borrowReserveId,    USDT_ID);
+        assertEq(positions[0].borrowReserveId, USDT_ID);
         assertEq(positions[0].collateralReserveId, WETH_ID);
         assertTrue(positions[0].isOpen);
     }
@@ -173,9 +173,7 @@ contract BorrowModuleTest is PoolTestBase {
     function test_GetUserBorrowBalance_IsView() public {
         // Call from a staticcall context — if it mutates state this would revert
         _openPosition();
-        bytes memory callData = abi.encodeWithSelector(
-            pool.getUserBorrowBalance.selector, USDT_ID, bob
-        );
+        bytes memory callData = abi.encodeWithSelector(pool.getUserBorrowBalance.selector, USDT_ID, bob);
         (bool ok,) = address(pool).staticcall(callData);
         assertTrue(ok, "getUserBorrowBalance must be a pure view");
     }

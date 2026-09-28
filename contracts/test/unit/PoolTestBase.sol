@@ -8,12 +8,10 @@ import {VariableInterestStrategy} from "../../src/modules/VariableInterestStrate
 import {MockOracle} from "../mocks/MockOracle.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 
-
-
 /// @notice Shared base — deploy stack + helpers every test inherits.
 abstract contract PoolTestBase is Test {
-    Pool                    internal pool;
-    MockOracle              internal oracle;
+    Pool internal pool;
+    MockOracle internal oracle;
     VariableInterestStrategy internal strategy;
 
     MockERC20 internal usdt;
@@ -30,27 +28,27 @@ abstract contract PoolTestBase is Test {
     bytes32 internal WBTC_ID;
 
     address internal alice = makeAddr("alice");
-    address internal bob   = makeAddr("bob");
+    address internal bob = makeAddr("bob");
 
     uint256 constant RAY = 1e18;
 
     // ── Default risk params ──────────────────────────────────────────
 
-    uint256 constant LIQ_THRESHOLD = 85 * RAY / 100;   // 85 %
-    uint256 constant LTV           = 80 * RAY / 100;   // 80 %
-    uint256 constant SLOPE1        =  4 * RAY / 100;   //  4 %
-    uint256 constant SLOPE2        = 60 * RAY / 100;   // 60 %
-    uint256 constant BASE_RATE     =  2 * RAY / 100;   //  2 %
-    uint256 constant OPT_UTIL      = 80 * RAY / 100;   // 80 %
-    uint256 constant LIQ_BONUS     =  5 * RAY / 100;   //  5 %
-    uint256 constant RESERVE_FACTOR = 10 * RAY / 100;  // 10 %
-    uint256 constant BORROW_CAP    = 1_000_000e18;
-    uint256 constant SUPPLY_CAP    = 1_000_000e18;
+    uint256 constant LIQ_THRESHOLD = 85 * RAY / 100; // 85 %
+    uint256 constant LTV = 80 * RAY / 100; // 80 %
+    uint256 constant SLOPE1 = 4 * RAY / 100; //  4 %
+    uint256 constant SLOPE2 = 60 * RAY / 100; // 60 %
+    uint256 constant BASE_RATE = 2 * RAY / 100; //  2 %
+    uint256 constant OPT_UTIL = 80 * RAY / 100; // 80 %
+    uint256 constant LIQ_BONUS = 5 * RAY / 100; //  5 %
+    uint256 constant RESERVE_FACTOR = 10 * RAY / 100; // 10 %
+    uint256 constant BORROW_CAP = 1_000_000e18;
+    uint256 constant SUPPLY_CAP = 1_000_000e18;
 
     function setUp() public virtual {
-        oracle   = new MockOracle();
+        oracle = new MockOracle();
         strategy = new VariableInterestStrategy();
-        pool     = new Pool(address(oracle));
+        pool = new Pool(address(oracle));
 
         usdt = new MockERC20("Mock USDT", "mUSDT");
         weth = new MockERC20("Mock WETH", "mWETH");
@@ -71,34 +69,36 @@ abstract contract PoolTestBase is Test {
 
         // Fund users
         usdt.mint(alice, 1_000_000e18);
-        usdt.mint(bob,   1_000_000e18);
+        usdt.mint(bob, 1_000_000e18);
         weth.mint(alice, 1_000e18);
-        weth.mint(bob,   1_000e18);
+        weth.mint(bob, 1_000e18);
         wbtc.mint(alice, 100e18);
-        wbtc.mint(bob,   100e18);
+        wbtc.mint(bob, 100e18);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
 
     function _addReserve(string memory name, address token, address feed) internal {
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 name,
-            tokenAddress:         token,
-            priceFeed:            feed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: LIQ_THRESHOLD,
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: name,
+                tokenAddress: token,
+                priceFeed: feed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: LIQ_THRESHOLD,
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function _deposit(address user, bytes32 reserveId, address token, uint256 amount) internal {
@@ -108,13 +108,7 @@ abstract contract PoolTestBase is Test {
         vm.stopPrank();
     }
 
-    function _borrow(
-        address user,
-        bytes32 collateralId,
-        bytes32 borrowId,
-        uint256 amount,
-        uint256 bufferPct
-    ) internal {
+    function _borrow(address user, bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPct) internal {
         vm.prank(user);
         pool.borrow(collateralId, borrowId, amount, bufferPct);
     }

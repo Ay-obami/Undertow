@@ -69,12 +69,12 @@ contract DeployAccountLayer is Script {
             IERC20(fxrpAddr),
             6, // FXRP mirrors XRPL's 6-decimal precision
             wflrAddr, // native-gas-token feed key. Gas on Coston2 is paid in
-                      // native C2FLR, not the WFLR ERC20 — but WFLR is 1:1
-                      // wrapped native FLR, so its already-registered FLR/USD
-                      // feed (from DeployCoston2.s.sol) prices native gas
-                      // correctly without registering a second, identical feed.
+            // native C2FLR, not the WFLR ERC20 — but WFLR is 1:1
+            // wrapped native FLR, so its already-registered FLR/USD
+            // feed (from DeployCoston2.s.sol) prices native gas
+            // correctly without registering a second, identical feed.
             fxrpAddr, // FXRP feed key — same convention as DeployCoston2.s.sol: feed key == token address
-            deployer  // fee collector — route FXRP gas payments to the deployer/treasury for now
+            deployer // fee collector — route FXRP gas payments to the deployer/treasury for now
         );
 
         // ── 4. Fund both paymasters' EntryPoint deposits ─────────────

@@ -20,12 +20,7 @@ abstract contract BorrowModule is PoolStorage {
     // Borrow
     // ================================================================
 
-    function _borrow(
-        bytes32 collateralId,
-        bytes32 borrowId,
-        uint256 amount,
-        uint256 bufferPercent
-    ) internal {
+    function _borrow(bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPercent) internal {
         require(amount > 0, "BorrowModule: zero amount");
         require(
             bufferPercent >= DataTypes.MIN_BUFFER && bufferPercent <= DataTypes.MAX_BUFFER,
@@ -34,7 +29,7 @@ abstract contract BorrowModule is PoolStorage {
         require(collateralId != borrowId, "BorrowModule: same asset");
 
         DataTypes.ReserveData storage collateralReserve = _getReserve(collateralId);
-        DataTypes.ReserveData storage borrowReserve    = _getReserve(borrowId);
+        DataTypes.ReserveData storage borrowReserve = _getReserve(borrowId);
 
         collateralReserve.assertActive();
         borrowReserve.assertActive();
@@ -46,8 +41,8 @@ abstract contract BorrowModule is PoolStorage {
         borrowReserve.updateIndexes();
 
         // USD values
-        uint256 borrowPriceRay      = IPriceOracle(_oracle).getPrice(borrowReserve.priceFeed);
-        uint256 collateralPriceRay  = IPriceOracle(_oracle).getPrice(collateralReserve.priceFeed);
+        uint256 borrowPriceRay = IPriceOracle(_oracle).getPrice(borrowReserve.priceFeed);
+        uint256 collateralPriceRay = IPriceOracle(_oracle).getPrice(collateralReserve.priceFeed);
 
         uint256 borrowValueRay = MathLib.rayMul(amount, borrowPriceRay);
 
@@ -58,17 +53,12 @@ abstract contract BorrowModule is PoolStorage {
         );
 
         // Check utilization ceiling
-        uint256 newUtil = MathLib.utilizationRate(
-            borrowReserve.totalBorrows + amount,
-            borrowReserve.totalDeposits
-        );
+        uint256 newUtil = MathLib.utilizationRate(borrowReserve.totalBorrows + amount, borrowReserve.totalDeposits);
         require(newUtil <= DataTypes.MAX_UTILIZATION, "BorrowModule: utilization ceiling");
 
         // Verify user has enough deposited collateral
-        uint256 userCollateral = MathLib.toReal(
-            _scaledDeposits[collateralId][msg.sender],
-            collateralReserve.supplyLiquidityIndex
-        );
+        uint256 userCollateral =
+            MathLib.toReal(_scaledDeposits[collateralId][msg.sender], collateralReserve.supplyLiquidityIndex);
         require(userCollateral >= collateralRequired, "BorrowModule: insufficient collateral");
 
         // Lock collateral by reducing the user's scaled deposit
@@ -81,16 +71,18 @@ abstract contract BorrowModule is PoolStorage {
 
         // Open position
         uint256 posId = _positions[msg.sender].length;
-        _positions[msg.sender].push(DataTypes.Position({
-            collateralReserveId:  collateralId,
-            borrowReserveId:      borrowId,
-            collateralPriceFeed:  collateralReserve.priceFeed,
-            borrowPriceFeed:      borrowReserve.priceFeed,
-            scaledDebt:           scaledDebt,
-            collateralLocked:     collateralRequired,
-            bufferPercent:        bufferPercent,
-            isOpen:               true
-        }));
+        _positions[msg.sender].push(
+            DataTypes.Position({
+                collateralReserveId: collateralId,
+                borrowReserveId: borrowId,
+                collateralPriceFeed: collateralReserve.priceFeed,
+                borrowPriceFeed: borrowReserve.priceFeed,
+                scaledDebt: scaledDebt,
+                collateralLocked: collateralRequired,
+                bufferPercent: bufferPercent,
+                isOpen: true
+            })
+        );
 
         IERC20(borrowReserve.tokenAddress).safeTransfer(msg.sender, amount);
 
@@ -101,17 +93,12 @@ abstract contract BorrowModule is PoolStorage {
     // Repay
     // ================================================================
 
-    function _repay(
-        bytes32 collateralId,
-        bytes32 borrowId,
-        uint256 positionId,
-        uint256 repayAmount
-    ) internal {
+    function _repay(bytes32 collateralId, bytes32 borrowId, uint256 positionId, uint256 repayAmount) internal {
         DataTypes.Position storage pos = _getPosition(msg.sender, positionId);
         require(pos.collateralReserveId == collateralId, "BorrowModule: wrong collateral");
-        require(pos.borrowReserveId == borrowId,         "BorrowModule: wrong borrow asset");
+        require(pos.borrowReserveId == borrowId, "BorrowModule: wrong borrow asset");
 
-        DataTypes.ReserveData storage borrowReserve    = _getReserve(borrowId);
+        DataTypes.ReserveData storage borrowReserve = _getReserve(borrowId);
         DataTypes.ReserveData storage collateralReserve = _getReserve(collateralId);
 
         borrowReserve.updateIndexes();
@@ -129,10 +116,7 @@ abstract contract BorrowModule is PoolStorage {
             collateralToReturn = pos.collateralLocked;
             pos.isOpen = false;
         } else {
-            collateralToReturn = MathLib.rayMul(
-                pos.collateralLocked,
-                MathLib.rayDiv(actualRepay, currentDebt)
-            );
+            collateralToReturn = MathLib.rayMul(pos.collateralLocked, MathLib.rayDiv(actualRepay, currentDebt));
             // Reduce scaled debt proportionally
             pos.scaledDebt -= MathLib.toScaled(actualRepay, borrowReserve.borrowLiquidityIndex);
             pos.collateralLocked -= collateralToReturn;
@@ -151,12 +135,9 @@ abstract contract BorrowModule is PoolStorage {
     // View
     // ================================================================
 
-    function _getUserBorrowBalance(
-        bytes32 reserveId,
-        address user
-    ) internal  returns (uint256 total) {
+    function _getUserBorrowBalance(bytes32 reserveId, address user) internal returns (uint256 total) {
         DataTypes.Position[] storage positions = _positions[user];
-        DataTypes.ReserveData storage reserve  = _reserves[reserveId];
+        DataTypes.ReserveData storage reserve = _reserves[reserveId];
         reserve.updateIndexes();
         uint256 len = positions.length;
         for (uint256 i; i < len; ++i) {

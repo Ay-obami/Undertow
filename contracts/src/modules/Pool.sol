@@ -31,7 +31,7 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
     constructor(address oracle) {
         require(oracle != address(0), "Pool: zero oracle");
         _oracle = oracle;
-        _owner  = msg.sender;
+        _owner = msg.sender;
     }
 
     // ================================================================
@@ -47,21 +47,11 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
         _withdraw(reserveId, amount);
     }
 
-    function borrow(
-        bytes32 collateralId,
-        bytes32 borrowId,
-        uint256 amount,
-        uint256 bufferPercent
-    ) external override {
+    function borrow(bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPercent) external override {
         _borrow(collateralId, borrowId, amount, bufferPercent);
     }
 
-    function repay(
-        bytes32 collateralId,
-        bytes32 borrowId,
-        uint256 positionId,
-        uint256 repayAmount
-    ) external override {
+    function repay(bytes32 collateralId, bytes32 borrowId, uint256 positionId, uint256 repayAmount) external override {
         _repay(collateralId, borrowId, positionId, repayAmount);
     }
 
@@ -76,44 +66,37 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
     function addReserve(DataTypes.ReserveConfig calldata cfg) external override onlyOwner {
         bytes32 id = getReserveId(cfg.name);
         require(_reserves[id].tokenAddress == address(0), "Pool: reserve exists");
-        require(cfg.tokenAddress      != address(0), "Pool: zero token");
-        require(cfg.priceFeed         != address(0), "Pool: zero feed");
-        require(cfg.interestStrategy  != address(0), "Pool: zero strategy");
-        require(cfg.ltv < cfg.liquidationThreshold,  "Pool: ltv >= threshold");
+        require(cfg.tokenAddress != address(0), "Pool: zero token");
+        require(cfg.priceFeed != address(0), "Pool: zero feed");
+        require(cfg.interestStrategy != address(0), "Pool: zero strategy");
+        require(cfg.ltv < cfg.liquidationThreshold, "Pool: ltv >= threshold");
 
         DataTypes.ReserveData storage r = _reserves[id];
-        r.id                   = id;
-        r.name                 = cfg.name;
-        r.tokenAddress         = cfg.tokenAddress;
-        r.priceFeed            = cfg.priceFeed;
-        r.interestStrategy     = cfg.interestStrategy;
+        r.id = id;
+        r.name = cfg.name;
+        r.tokenAddress = cfg.tokenAddress;
+        r.priceFeed = cfg.priceFeed;
+        r.interestStrategy = cfg.interestStrategy;
         r.liquidationThreshold = cfg.liquidationThreshold;
-        r.ltv                  = cfg.ltv;
-        r.slope1               = cfg.slope1;
-        r.slope2               = cfg.slope2;
-        r.baseInterestRate     = cfg.baseInterestRate;
-        r.optimalUtilization   = cfg.optimalUtilization;
-        r.liquidationBonus     = cfg.liquidationBonus;
-        r.reserveFactor        = cfg.reserveFactor;
-        r.borrowCap            = cfg.borrowCap;
-        r.supplyCap            = cfg.supplyCap;
-        r.isActive             = cfg.isActive;
-        r.isBorrowable         = cfg.isBorrowable;
+        r.ltv = cfg.ltv;
+        r.slope1 = cfg.slope1;
+        r.slope2 = cfg.slope2;
+        r.baseInterestRate = cfg.baseInterestRate;
+        r.optimalUtilization = cfg.optimalUtilization;
+        r.liquidationBonus = cfg.liquidationBonus;
+        r.reserveFactor = cfg.reserveFactor;
+        r.borrowCap = cfg.borrowCap;
+        r.supplyCap = cfg.supplyCap;
+        r.isActive = cfg.isActive;
+        r.isBorrowable = cfg.isBorrowable;
         // Index starts at RAY (1.0)
         r.supplyLiquidityIndex = DataTypes.RAY;
         r.borrowLiquidityIndex = DataTypes.RAY;
-        r.lastUpdateTimestamp  = block.timestamp;
+        r.lastUpdateTimestamp = block.timestamp;
 
         _reserveIds.push(id);
 
-        emit ReserveInitialized(
-            id,
-            cfg.name,
-            cfg.tokenAddress,
-            cfg.priceFeed,
-            cfg.ltv,
-            cfg.liquidationThreshold
-        );
+        emit ReserveInitialized(id, cfg.name, cfg.tokenAddress, cfg.priceFeed, cfg.ltv, cfg.liquidationThreshold);
     }
 
     function setReserveActive(bytes32 reserveId, bool active) external override onlyOwner {
@@ -147,7 +130,7 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
         return keccak256(abi.encodePacked(name));
     }
 
-    function getUserDepositBalance(bytes32 reserveId, address user) external  returns (uint256) {
+    function getUserDepositBalance(bytes32 reserveId, address user) external returns (uint256) {
         return _getUserDepositBalance(reserveId, user);
     }
 
@@ -181,6 +164,7 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
         }
         return result;
     }
+
     function getPosition(address user, uint256 positionId) external view returns (DataTypes.Position memory) {
         return _getPosition(user, positionId);
     }

@@ -15,11 +15,7 @@ contract MathLibHarness {
         return MathLib.rayDiv(a, b);
     }
 
-    function compoundIndex(
-        uint256 currentIndex,
-        uint256 rate,
-        uint256 timeElapsed
-    ) external pure returns (uint256) {
+    function compoundIndex(uint256 currentIndex, uint256 rate, uint256 timeElapsed) external pure returns (uint256) {
         return MathLib.compoundIndex(currentIndex, rate, timeElapsed);
     }
 
@@ -31,18 +27,15 @@ contract MathLibHarness {
         return MathLib.toReal(scaledAmount, index);
     }
 
-    function healthFactor(
-        uint256 collateralValueRay,
-        uint256 debtValueRay,
-        uint256 liquidationThreshold
-    ) external pure returns (uint256) {
+    function healthFactor(uint256 collateralValueRay, uint256 debtValueRay, uint256 liquidationThreshold)
+        external
+        pure
+        returns (uint256)
+    {
         return MathLib.healthFactor(collateralValueRay, debtValueRay, liquidationThreshold);
     }
 
-    function utilizationRate(
-        uint256 totalBorrows,
-        uint256 totalDeposits
-    ) external pure returns (uint256) {
+    function utilizationRate(uint256 totalBorrows, uint256 totalDeposits) external pure returns (uint256) {
         return MathLib.utilizationRate(totalBorrows, totalDeposits);
     }
 
@@ -173,7 +166,7 @@ contract MathLibTest is Test {
         uint256 amount = 1234e18;
         uint256 index = 1.05e18;
         uint256 scaled = lib.toScaled(amount, index);
-        uint256 real   = lib.toReal(scaled, index);
+        uint256 real = lib.toReal(scaled, index);
         // Small rounding error from integer division is acceptable
         assertApproxEqAbs(real, amount, 2);
     }

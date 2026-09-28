@@ -20,15 +20,8 @@ docs/
 node_modules/
 dist/
 
-# Foundry git-submodule dependencies.
-# These are declared in .gitmodules + contracts/foundry.lock and are restored
-# with `forge install` (or `git submodule update --init --recursive`), so they
-# are not tracked here. NOTE: contracts/lib/flare-periphery IS tracked, because
-# it is a soldeer dependency that `forge install` cannot restore.
-contracts/lib/forge-std/
-contracts/lib/openzeppelin-contracts/
-contracts/lib/chainlink-brownie-contracts/
-contracts/lib/account-abstraction/
+# Foundry dependency gitlinks are tracked and pinned in contracts/foundry.lock.
+# Initialize them with git submodule update --init --recursive.
 
 #boilerplate contract
 Lending_Borrowing_Protocol/src/core/mockCode.sol

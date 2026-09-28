@@ -18,11 +18,7 @@ contract MockFtsoV2 {
         _feeds[feedId] = Feed(value, decimals, timestamp);
     }
 
-    function getFeedById(bytes21 feedId)
-        external
-        view
-        returns (uint256 _value, int8 _decimals, uint64 _timestamp)
-    {
+    function getFeedById(bytes21 feedId) external view returns (uint256 _value, int8 _decimals, uint64 _timestamp) {
         Feed memory f = _feeds[feedId];
         return (f.value, f.decimals, f.timestamp);
     }

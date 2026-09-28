@@ -37,15 +37,18 @@ contract SolvencyVerifierTest is Test {
         solvency = new SolvencyVerifier(address(groth16));
     }
 
-
-    function _validProof() internal pure returns (
-        uint256[2] memory a,
-        uint256[2][2] memory b,
-        uint256[2] memory c,
-        uint256 commitment,
-        uint256 liquidationThreshold,
-        uint256 thresholdRay
-    ) {
+    function _validProof()
+        internal
+        pure
+        returns (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,
+            uint256 commitment,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        )
+    {
         a = [
             0x03ce5583633db573f8a9838d392929598383e96ebfa85668e82b4599f05b37e8,
             0x01cf2f4604e4bfe6f618806f21cf53b9b478d2838b00fa32b294600201f870c4
@@ -66,7 +69,7 @@ contract SolvencyVerifierTest is Test {
         ];
         commitment = 0x11554017a7a7787e39d4dd04e5b8633c551867009283facedf0516b47ea7c9ed;
         liquidationThreshold = 850_000_000_000_000_000; // 0.85e18
-        thresholdRay = 1_000_000_000_000_000_000;        // 1e18 — proving HF >= 1
+        thresholdRay = 1_000_000_000_000_000_000; // 1e18 — proving HF >= 1
     }
 
     // ================================================================
@@ -74,23 +77,41 @@ contract SolvencyVerifierTest is Test {
     // ================================================================
 
     function test_Groth16Verifier_AcceptsRealValidProof() public view {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         uint256 commitment, uint256 liquidationThreshold, uint256 thresholdRay) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,
+            uint256 commitment,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        ) = _validProof();
 
         uint256[3] memory pubSignals = [commitment, liquidationThreshold, thresholdRay];
         assertTrue(groth16.verifyProof(a, b, c, pubSignals));
     }
 
     function test_SolvencyVerifier_CheckSolvency_AcceptsValidProof() public view {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         uint256 commitment, uint256 liquidationThreshold, uint256 thresholdRay) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,
+            uint256 commitment,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        ) = _validProof();
 
         assertTrue(solvency.checkSolvency(a, b, c, commitment, liquidationThreshold, thresholdRay));
     }
 
     function test_SolvencyVerifier_VerifySolvency_EmitsOnValidProof() public {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         uint256 commitment, uint256 liquidationThreshold, uint256 thresholdRay) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,
+            uint256 commitment,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        ) = _validProof();
 
         vm.expectEmit(true, true, false, true, address(solvency));
         emit SolvencyVerifier.SolvencyProven(address(this), commitment, liquidationThreshold, thresholdRay);
@@ -109,8 +130,13 @@ contract SolvencyVerifierTest is Test {
     // if it verified regardless of public inputs, it would prove nothing.
 
     function test_Groth16Verifier_RejectsProof_WithWrongCommitment() public view {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         , uint256 liquidationThreshold, uint256 thresholdRay) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        ) = _validProof();
 
         uint256 wrongCommitment = 0xdead;
         uint256[3] memory pubSignals = [wrongCommitment, liquidationThreshold, thresholdRay];
@@ -124,8 +150,13 @@ contract SolvencyVerifierTest is Test {
         // The real position's HF (1.275) does satisfy >= 1 but not >= 2 —
         // and regardless, this is a *different* proof obligation than the
         // one the proof bytes were generated for, so it must reject.
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         uint256 commitment, uint256 liquidationThreshold,) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,
+            uint256 commitment,
+            uint256 liquidationThreshold,
+        ) = _validProof();
 
         uint256 higherThreshold = 2_000_000_000_000_000_000; // 2e18
         uint256[3] memory pubSignals = [commitment, liquidationThreshold, higherThreshold];
@@ -134,8 +165,8 @@ contract SolvencyVerifierTest is Test {
     }
 
     function test_Groth16Verifier_RejectsProof_WithWrongLiquidationThreshold() public view {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         uint256 commitment, , uint256 thresholdRay) = _validProof();
+        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c, uint256 commitment,, uint256 thresholdRay) =
+            _validProof();
 
         uint256 wrongLt = 500_000_000_000_000_000; // 0.5e18 instead of 0.85e18
         uint256[3] memory pubSignals = [commitment, wrongLt, thresholdRay];
@@ -153,15 +184,25 @@ contract SolvencyVerifierTest is Test {
     }
 
     function test_SolvencyVerifier_CheckSolvency_RejectsTamperedProof() public view {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         , uint256 liquidationThreshold, uint256 thresholdRay) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        ) = _validProof();
 
         assertFalse(solvency.checkSolvency(a, b, c, 0xdead, liquidationThreshold, thresholdRay));
     }
 
     function test_SolvencyVerifier_VerifySolvency_DoesNotEmitOnInvalidProof() public {
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c,
-         , uint256 liquidationThreshold, uint256 thresholdRay) = _validProof();
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,,
+            uint256 liquidationThreshold,
+            uint256 thresholdRay
+        ) = _validProof();
 
         // recordLogs + assert no SolvencyProven log, rather than expectEmit
         // (which would fail the test if the event ISN'T emitted as expected —

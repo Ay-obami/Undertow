@@ -12,6 +12,7 @@ remappings = [
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol=lib/chainlink-brownie-contracts/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol",
   "@forge-std/=lib/forge-std/",
+  "forge-std/=lib/forge-std/src/",
   "@account-abstraction/=lib/account-abstraction/",
   "@flarenetwork/flare-periphery-contracts/=lib/flare-periphery/src/"
 ]

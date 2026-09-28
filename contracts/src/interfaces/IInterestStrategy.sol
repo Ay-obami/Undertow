@@ -16,16 +16,14 @@ interface IInterestStrategy {
     ) external pure returns (uint256);
 
     /// @notice Returns the current supply rate (after reserve factor cut)
-    function getSupplyRate(
-        uint256 borrowRate,
-        uint256 utilizationRate,
-        uint256 reserveFactor
-    ) external pure returns (uint256);
+    function getSupplyRate(uint256 borrowRate, uint256 utilizationRate, uint256 reserveFactor)
+        external
+        pure
+        returns (uint256);
 
     /// @notice Compounds an index forward by `timeElapsed` seconds
-    function computeUpdatedIndex(
-        uint256 currentIndex,
-        uint256 rate,
-        uint256 timeElapsed
-    ) external pure returns (uint256);
+    function computeUpdatedIndex(uint256 currentIndex, uint256 rate, uint256 timeElapsed)
+        external
+        pure
+        returns (uint256);
 }

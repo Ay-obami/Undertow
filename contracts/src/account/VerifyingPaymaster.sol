@@ -36,9 +36,7 @@ contract VerifyingPaymaster is BasePaymaster {
 
     event VerifyingSignerUpdated(address indexed oldSigner, address indexed newSigner);
 
-    constructor(IEntryPoint _entryPoint, address _owner, address _verifyingSigner)
-        BasePaymaster(_entryPoint, _owner)
-    {
+    constructor(IEntryPoint _entryPoint, address _owner, address _verifyingSigner) BasePaymaster(_entryPoint, _owner) {
         require(_verifyingSigner != address(0), "VerifyingPaymaster: zero signer");
         verifyingSigner = _verifyingSigner;
     }
@@ -56,11 +54,11 @@ contract VerifyingPaymaster is BasePaymaster {
     ///         the hashed data — both change independently of what the
     ///         paymaster is actually approving (that a specific sender may
     ///         run specific callData, sponsored, within a time window).
-    function getHash(
-        PackedUserOperation calldata userOp,
-        uint48 validUntil,
-        uint48 validAfter
-    ) public view returns (bytes32) {
+    function getHash(PackedUserOperation calldata userOp, uint48 validUntil, uint48 validAfter)
+        public
+        view
+        returns (bytes32)
+    {
         return keccak256(
             abi.encode(
                 userOp.sender,
@@ -83,7 +81,13 @@ contract VerifyingPaymaster is BasePaymaster {
         PackedUserOperation calldata userOp,
         bytes32, /* userOpHash */
         uint256 /* maxCost */
-    ) internal view virtual override returns (bytes memory context, uint256 validationData) {
+    )
+        internal
+        view
+        virtual
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         (uint48 validUntil, uint48 validAfter, bytes calldata signature) = _parsePaymasterData(userOp.paymasterAndData);
 
         require(signature.length == 65, "VerifyingPaymaster: invalid signature length");

@@ -2,13 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {PoolTestBase} from "./PoolTestBase.sol";
-import {DataTypes}    from "../../src/libraries/DataTypes.sol";
-import {Pool}         from "../../src/modules/Pool.sol";
-import {MockOracle}   from "../mocks/MockOracle.sol";
+import {DataTypes} from "../../src/libraries/DataTypes.sol";
+import {Pool} from "../../src/modules/Pool.sol";
+import {MockOracle} from "../mocks/MockOracle.sol";
 
 contract PoolAdminTest is PoolTestBase {
-   event ReserveStatusUpdated(bytes32 indexed reserveId, bool isActive);
-   event ReserveBorrowStatusUpdated(bytes32 indexed reserveId, bool isBorrowable);
+    event ReserveStatusUpdated(bytes32 indexed reserveId, bool isActive);
+    event ReserveBorrowStatusUpdated(bytes32 indexed reserveId, bool isBorrowable);
 
     // ================================================================
     // Constructor
@@ -32,24 +32,26 @@ contract PoolAdminTest is PoolTestBase {
     function test_AddReserve_RevertsIfNotOwner() public {
         vm.prank(alice);
         vm.expectRevert("PoolStorage: not owner");
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "FAKE",
-            tokenAddress:         address(usdt),
-            priceFeed:            usdtFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: LIQ_THRESHOLD,
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "FAKE",
+                tokenAddress: address(usdt),
+                priceFeed: usdtFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: LIQ_THRESHOLD,
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function test_SetReserveActive_RevertsIfNotOwner() public {
@@ -70,112 +72,122 @@ contract PoolAdminTest is PoolTestBase {
 
     function test_AddReserve_RevertsOnDuplicate() public {
         vm.expectRevert("Pool: reserve exists");
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "mUSDT",  // already registered
-            tokenAddress:         address(usdt),
-            priceFeed:            usdtFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: LIQ_THRESHOLD,
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "mUSDT", // already registered
+                tokenAddress: address(usdt),
+                priceFeed: usdtFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: LIQ_THRESHOLD,
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function test_AddReserve_RevertsOnZeroToken() public {
         vm.expectRevert("Pool: zero token");
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "NEW",
-            tokenAddress:         address(0),
-            priceFeed:            usdtFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: LIQ_THRESHOLD,
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "NEW",
+                tokenAddress: address(0),
+                priceFeed: usdtFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: LIQ_THRESHOLD,
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function test_AddReserve_RevertsOnZeroFeed() public {
         vm.expectRevert("Pool: zero feed");
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "NEW",
-            tokenAddress:         address(usdt),
-            priceFeed:            address(0),
-            interestStrategy:     address(strategy),
-            liquidationThreshold: LIQ_THRESHOLD,
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "NEW",
+                tokenAddress: address(usdt),
+                priceFeed: address(0),
+                interestStrategy: address(strategy),
+                liquidationThreshold: LIQ_THRESHOLD,
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function test_AddReserve_RevertsOnZeroStrategy() public {
         vm.expectRevert("Pool: zero strategy");
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "NEW",
-            tokenAddress:         address(usdt),
-            priceFeed:            usdtFeed,
-            interestStrategy:     address(0),
-            liquidationThreshold: LIQ_THRESHOLD,
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "NEW",
+                tokenAddress: address(usdt),
+                priceFeed: usdtFeed,
+                interestStrategy: address(0),
+                liquidationThreshold: LIQ_THRESHOLD,
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function test_AddReserve_RevertsWhenLtvGeThreshold() public {
         vm.expectRevert("Pool: ltv >= threshold");
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "NEW",
-            tokenAddress:         address(usdt),
-            priceFeed:            usdtFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: LTV,   // ltv == threshold → should revert
-            ltv:                  LTV,
-            slope1:               SLOPE1,
-            slope2:               SLOPE2,
-            baseInterestRate:     BASE_RATE,
-            optimalUtilization:   OPT_UTIL,
-            liquidationBonus:     LIQ_BONUS,
-            reserveFactor:        RESERVE_FACTOR,
-            borrowCap:            BORROW_CAP,
-            supplyCap:            SUPPLY_CAP,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "NEW",
+                tokenAddress: address(usdt),
+                priceFeed: usdtFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: LTV, // ltv == threshold → should revert
+                ltv: LTV,
+                slope1: SLOPE1,
+                slope2: SLOPE2,
+                baseInterestRate: BASE_RATE,
+                optimalUtilization: OPT_UTIL,
+                liquidationBonus: LIQ_BONUS,
+                reserveFactor: RESERVE_FACTOR,
+                borrowCap: BORROW_CAP,
+                supplyCap: SUPPLY_CAP,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
     }
 
     function test_AddReserve_InitialisesIndexesAtRay() public view {
@@ -261,7 +273,7 @@ contract PoolAdminTest is PoolTestBase {
 
     function test_GetUtilizationRate_AfterDepositAndBorrow() public {
         _deposit(alice, USDT_ID, address(usdt), 100_000e18);
-        _deposit(bob,   WETH_ID, address(weth),   100e18);
+        _deposit(bob, WETH_ID, address(weth), 100e18);
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 50_000e18, 0.1e18);
 
@@ -271,7 +283,7 @@ contract PoolAdminTest is PoolTestBase {
 
     function test_GetUserPositions_FiltersClosedPositions() public {
         _deposit(alice, USDT_ID, address(usdt), 500_000e18);
-        _deposit(bob,   WETH_ID, address(weth),   100e18);
+        _deposit(bob, WETH_ID, address(weth), 100e18);
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 5_000e18, 0.1e18);
 
@@ -289,10 +301,10 @@ contract PoolAdminTest is PoolTestBase {
 
     function test_GetUserPositions_MultipleOpenPositions() public {
         _deposit(alice, USDT_ID, address(usdt), 500_000e18);
-        _deposit(alice, WETH_ID, address(weth),   500e18);
+        _deposit(alice, WETH_ID, address(weth), 500e18);
 
         _deposit(bob, WETH_ID, address(weth), 50e18);
-        _deposit(bob, WBTC_ID, address(wbtc),  5e18);
+        _deposit(bob, WBTC_ID, address(wbtc), 5e18);
 
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 5_000e18, 0.1e18);
@@ -310,7 +322,7 @@ contract PoolAdminTest is PoolTestBase {
 
     function test_GetPosition_RevertsOnClosedPosition() public {
         _deposit(alice, USDT_ID, address(usdt), 500_000e18);
-        _deposit(bob,   WETH_ID, address(weth),   10e18);
+        _deposit(bob, WETH_ID, address(weth), 10e18);
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 5_000e18, 0.1e18);
 
@@ -327,7 +339,7 @@ contract PoolAdminTest is PoolTestBase {
 
     function test_CheckPositionHealth_HealthyReturnsTrue() public {
         _deposit(alice, USDT_ID, address(usdt), 500_000e18);
-        _deposit(bob,   WETH_ID, address(weth),   10e18);
+        _deposit(bob, WETH_ID, address(weth), 10e18);
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 5_000e18, 0.1e18);
 
@@ -336,11 +348,10 @@ contract PoolAdminTest is PoolTestBase {
 }
 
 contract PoolBorrowEdgeCasesTest is PoolTestBase {
-
     function setUp() public override {
         super.setUp();
         _deposit(alice, USDT_ID, address(usdt), 500_000e18);
-        _deposit(alice, WETH_ID, address(weth),   500e18);
+        _deposit(alice, WETH_ID, address(weth), 500e18);
     }
 
     function test_Borrow_RevertsIfCollateralReserveInactive() public {
