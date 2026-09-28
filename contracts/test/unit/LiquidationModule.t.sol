@@ -7,7 +7,7 @@ import {console} from "forge-std/Test.sol";
 contract LiquidationModuleTest is PoolTestBase {
     address internal liquidator = makeAddr("liquidator");
 
-     event Liquidated(
+    event Liquidated(
         address indexed user,
         address indexed liquidator,
         bytes32 indexed collateralReserveId,
@@ -96,7 +96,7 @@ contract LiquidationModuleTest is PoolTestBase {
         // debtInCollateralUnits = debt * usdtPrice / wethPrice
         //                       = debt * 1e18 / 1200e18
         // seized = debtInCollateral * (1 + 0.05)
-        uint256 debtInWeth = debt * RAY / (2_500 * RAY);          // debt / wethPrice
+        uint256 debtInWeth = debt * RAY / (2_500 * RAY); // debt / wethPrice
         uint256 expectedSeized = debtInWeth * (RAY + LIQ_BONUS) / RAY; // + 5 %
 
         uint256 wethBefore = weth.balanceOf(liquidator);
@@ -132,23 +132,23 @@ contract LiquidationModuleTest is PoolTestBase {
     }
 
     function test_Liquidate_EmitsEvent() public {
-    _crashEth(2_500 * RAY);
-    uint256 debt = pool.getUserBorrowBalance(USDT_ID, bob);
-    usdt.mint(liquidator, debt);
+        _crashEth(2_500 * RAY);
+        uint256 debt = pool.getUserBorrowBalance(USDT_ID, bob);
+        usdt.mint(liquidator, debt);
 
-   // uint256 collateralLocked = pool.getPosition(bob, 0).collateralLocked;
-    uint256 debtInWeth = debt * RAY / (2_500 * RAY);          // debt / wethPrice
+        // uint256 collateralLocked = pool.getPosition(bob, 0).collateralLocked;
+        uint256 debtInWeth = debt * RAY / (2_500 * RAY); // debt / wethPrice
         uint256 expectedSeized = debtInWeth * (RAY + LIQ_BONUS) / RAY; // + 5 %
 
-    vm.startPrank(liquidator);
-    usdt.approve(address(pool), debt);
+        vm.startPrank(liquidator);
+        usdt.approve(address(pool), debt);
 
-    // Step 1: declare which parts to check (topic1, topic2, topic3, data) + emitter
-    vm.expectEmit(true, true, true, true, address(pool));
-    // Step 2: emit the expected event — must immediately precede the call that triggers it
-    emit Liquidated(bob, liquidator, WETH_ID, USDT_ID, debt, expectedSeized, 0);
+        // Step 1: declare which parts to check (topic1, topic2, topic3, data) + emitter
+        vm.expectEmit(true, true, true, true, address(pool));
+        // Step 2: emit the expected event — must immediately precede the call that triggers it
+        emit Liquidated(bob, liquidator, WETH_ID, USDT_ID, debt, expectedSeized, 0);
 
-    pool.liquidate(bob, 0);
-    vm.stopPrank();
-}
+        pool.liquidate(bob, 0);
+        vm.stopPrank();
+    }
 }

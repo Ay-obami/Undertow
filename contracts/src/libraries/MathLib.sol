@@ -31,11 +31,7 @@ library MathLib {
     /// @notice Compounds `currentIndex` forward by `timeElapsed` seconds at `rate`.
     /// @param  rate        Per-second annualised rate, RAY-scaled
     ///                     e.g. 5 % APY → 0.05e18 / SECONDS_PER_YEAR
-    function compoundIndex(
-        uint256 currentIndex,
-        uint256 rate,
-        uint256 timeElapsed
-    ) internal pure returns (uint256) {
+    function compoundIndex(uint256 currentIndex, uint256 rate, uint256 timeElapsed) internal pure returns (uint256) {
         if (timeElapsed == 0) return currentIndex;
         uint256 linearAccumulator = RAY + (rate * timeElapsed) / SECONDS_PER_YEAR;
         return rayMul(currentIndex, linearAccumulator);
@@ -67,11 +63,11 @@ library MathLib {
     /// @param collateralValueRay  Collateral in USD, RAY-scaled
     /// @param debtValueRay        Debt in USD, RAY-scaled
     /// @param liquidationThreshold RAY-scaled (e.g. 0.85e18)
-    function healthFactor(
-        uint256 collateralValueRay,
-        uint256 debtValueRay,
-        uint256 liquidationThreshold
-    ) internal pure returns (uint256) {
+    function healthFactor(uint256 collateralValueRay, uint256 debtValueRay, uint256 liquidationThreshold)
+        internal
+        pure
+        returns (uint256)
+    {
         if (debtValueRay == 0) return type(uint256).max;
         return rayDiv(rayMul(collateralValueRay, liquidationThreshold), debtValueRay);
     }
@@ -81,10 +77,7 @@ library MathLib {
     // ================================================================
 
     /// @notice Utilization rate = totalBorrows / totalDeposits, RAY-scaled.
-    function utilizationRate(
-        uint256 totalBorrows,
-        uint256 totalDeposits
-    ) internal pure returns (uint256) {
+    function utilizationRate(uint256 totalBorrows, uint256 totalDeposits) internal pure returns (uint256) {
         if (totalDeposits == 0) return 0;
         return rayDiv(totalBorrows, totalDeposits);
     }

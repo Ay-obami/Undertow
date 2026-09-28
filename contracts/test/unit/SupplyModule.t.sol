@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {PoolTestBase} from "./PoolTestBase.sol";
 
 contract SupplyModuleTest is PoolTestBase {
-
     event Deposit(address indexed user, bytes32 indexed reserveId, uint256 amount, uint256 scaledAmount);
     // ================================================================
     // deposit
@@ -22,11 +21,11 @@ contract SupplyModuleTest is PoolTestBase {
 
     function test_Deposit_MultipleUsers() public {
         _deposit(alice, USDT_ID, address(usdt), 1_000e18);
-        _deposit(bob,   USDT_ID, address(usdt), 2_000e18);
+        _deposit(bob, USDT_ID, address(usdt), 2_000e18);
 
         assertEq(pool.getReserve(USDT_ID).totalDeposits, 3_000e18);
         assertEq(pool.getUserDepositBalance(USDT_ID, alice), 1_000e18);
-        assertEq(pool.getUserDepositBalance(USDT_ID, bob),   2_000e18);
+        assertEq(pool.getUserDepositBalance(USDT_ID, bob), 2_000e18);
     }
 
     function test_Deposit_EmitsEvent() public {
@@ -125,7 +124,7 @@ contract SupplyModuleTest is PoolTestBase {
     function test_Withdraw_InterestAccruesOverTime() public {
         // Seed deposits and a borrow to generate non-zero utilization
         _deposit(alice, USDT_ID, address(usdt), 100_000e18);
-        _deposit(bob,   WETH_ID, address(weth), 100e18);
+        _deposit(bob, WETH_ID, address(weth), 100e18);
 
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 50_000e18, 0.1e18);

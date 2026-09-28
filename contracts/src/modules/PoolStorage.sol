@@ -48,10 +48,7 @@ abstract contract PoolStorage is IPool {
         require(r.tokenAddress != address(0), "PoolStorage: unknown reserve");
     }
 
-    function _getPosition(
-        address user,
-        uint256 positionId
-    ) internal view returns (DataTypes.Position storage p) {
+    function _getPosition(address user, uint256 positionId) internal view returns (DataTypes.Position storage p) {
         require(positionId < _positions[user].length, "PoolStorage: bad position id");
         p = _positions[user][positionId];
         require(p.isOpen, "PoolStorage: position closed");

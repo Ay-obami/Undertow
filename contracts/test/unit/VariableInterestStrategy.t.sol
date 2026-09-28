@@ -8,11 +8,11 @@ import {MathLib} from "../../src/libraries/MathLib.sol";
 contract VariableInterestStrategyTest is Test {
     VariableInterestStrategy internal strategy;
 
-    uint256 constant RAY        = 1e18;
-    uint256 constant BASE_RATE  = 2e16;   // 2%
-    uint256 constant SLOPE1     = 4e16;   // 4%
-    uint256 constant SLOPE2     = 60e16;  // 60%
-    uint256 constant OPT_UTIL   = 80e16;  // 80%
+    uint256 constant RAY = 1e18;
+    uint256 constant BASE_RATE = 2e16; // 2%
+    uint256 constant SLOPE1 = 4e16; // 4%
+    uint256 constant SLOPE2 = 60e16; // 60%
+    uint256 constant OPT_UTIL = 80e16; // 80%
     uint256 constant RESERVE_FACTOR = 10e16; // 10%
 
     function setUp() public {
@@ -75,10 +75,10 @@ contract VariableInterestStrategyTest is Test {
         // util = 90%, optimal = 80% → excess = 10%, maxExcess = 20% → ratio = 0.5
         uint256 util = 90e16;
         uint256 rate = strategy.getBorrowRate(util, SLOPE1, SLOPE2, BASE_RATE, OPT_UTIL);
-        uint256 excess      = util - OPT_UTIL;                          // 10%
-        uint256 maxExcess   = RAY  - OPT_UTIL;                          // 20%
-        uint256 excessRatio = MathLib.rayDiv(excess, maxExcess);         // 0.5
-        uint256 expected    = BASE_RATE + SLOPE1 + MathLib.rayMul(excessRatio, SLOPE2);
+        uint256 excess = util - OPT_UTIL; // 10%
+        uint256 maxExcess = RAY - OPT_UTIL; // 20%
+        uint256 excessRatio = MathLib.rayDiv(excess, maxExcess); // 0.5
+        uint256 expected = BASE_RATE + SLOPE1 + MathLib.rayMul(excessRatio, SLOPE2);
         assertApproxEqAbs(rate, expected, 2);
     }
 
@@ -87,7 +87,7 @@ contract VariableInterestStrategyTest is Test {
         // util > optimal = 100% is impossible in practice but we test the branch:
         // util = RAY, optimal = RAY → util <= optimal so normal zone, but
         // we need util > optimal. Use a mock optimal just below RAY.
-        uint256 opt  = RAY - 1;
+        uint256 opt = RAY - 1;
         uint256 util = RAY; // 100%
         // maxExcess = RAY - (RAY-1) = 1, not zero; excessRatio = (util-opt)/1 = 1 → RAY
         uint256 rate = strategy.getBorrowRate(util, SLOPE1, SLOPE2, BASE_RATE, opt);
@@ -133,17 +133,17 @@ contract VariableInterestStrategyTest is Test {
     function test_SupplyRate_WithReserveFactor() public view {
         // supplyRate = borrowRate * util * (1 - reserveFactor)
         uint256 borrowRate = 6e16; // 6%
-        uint256 util       = 80e16; // 80%
-        uint256 rate       = strategy.getSupplyRate(borrowRate, util, RESERVE_FACTOR);
+        uint256 util = 80e16; // 80%
+        uint256 rate = strategy.getSupplyRate(borrowRate, util, RESERVE_FACTOR);
         uint256 afterFactor = RAY - RESERVE_FACTOR;
-        uint256 expected    = MathLib.rayMul(MathLib.rayMul(borrowRate, util), afterFactor);
+        uint256 expected = MathLib.rayMul(MathLib.rayMul(borrowRate, util), afterFactor);
         assertApproxEqAbs(rate, expected, 2);
     }
 
     function test_SupplyRate_AlwaysLessThanBorrowRate() public view {
         // Supply rate must always be <= borrow rate (reserve factor + util < 1)
         uint256 borrowRate = 10e16;
-        uint256 util       = 80e16;
+        uint256 util = 80e16;
         uint256 supplyRate = strategy.getSupplyRate(borrowRate, util, RESERVE_FACTOR);
         assertLe(supplyRate, borrowRate);
     }
@@ -170,7 +170,7 @@ contract VariableInterestStrategyTest is Test {
 
     function test_ComputeUpdatedIndex_StartingIndexPreserved() public view {
         // A higher starting index multiplies proportionally
-        uint256 idx1 = strategy.computeUpdatedIndex(RAY,    5e16, 365 days);
+        uint256 idx1 = strategy.computeUpdatedIndex(RAY, 5e16, 365 days);
         uint256 idx2 = strategy.computeUpdatedIndex(2 * RAY, 5e16, 365 days);
         assertApproxEqAbs(idx2, 2 * idx1, 2);
     }
@@ -186,7 +186,7 @@ contract VariableInterestStrategyTest is Test {
     }
 
     function testFuzz_SupplyRate_NeverExceedsBorrowRate(uint256 util, uint256 reserveFactor) public view {
-        util         = bound(util, 0, RAY);
+        util = bound(util, 0, RAY);
         reserveFactor = bound(reserveFactor, 0, RAY);
         uint256 borrowRate = strategy.getBorrowRate(util, SLOPE1, SLOPE2, BASE_RATE, OPT_UTIL);
         uint256 supplyRate = strategy.getSupplyRate(borrowRate, util, reserveFactor);

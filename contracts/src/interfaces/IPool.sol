@@ -84,9 +84,9 @@ interface IPool {
 
     function getReserveId(string calldata name) external pure returns (bytes32);
 
-    function getUserDepositBalance(bytes32 reserveId, address user) external  returns (uint256);
+    function getUserDepositBalance(bytes32 reserveId, address user) external returns (uint256);
 
-    function getUserBorrowBalance(bytes32 reserveId, address user) external  returns (uint256);
+    function getUserBorrowBalance(bytes32 reserveId, address user) external returns (uint256);
 
     function getUtilizationRate(bytes32 reserveId) external view returns (uint256);
 

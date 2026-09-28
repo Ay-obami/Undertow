@@ -36,21 +36,23 @@ contract VariableInterestStrategy is IInterestStrategy {
         return _borrowRate(utilizationRate, slope1, slope2, baseRate, optimalUtilization);
     }
 
-    function getSupplyRate(
-        uint256 borrowRate,
-        uint256 utilizationRate,
-        uint256 reserveFactor
-    ) external pure override returns (uint256) {
+    function getSupplyRate(uint256 borrowRate, uint256 utilizationRate, uint256 reserveFactor)
+        external
+        pure
+        override
+        returns (uint256)
+    {
         // supplyRate = borrowRate * utilization * (1 - reserveFactor)
         uint256 afterFactor = RAY - reserveFactor;
         return MathLib.rayMul(MathLib.rayMul(borrowRate, utilizationRate), afterFactor);
     }
 
-    function computeUpdatedIndex(
-        uint256 currentIndex,
-        uint256 rate,
-        uint256 timeElapsed
-    ) external pure override returns (uint256) {
+    function computeUpdatedIndex(uint256 currentIndex, uint256 rate, uint256 timeElapsed)
+        external
+        pure
+        override
+        returns (uint256)
+    {
         return MathLib.compoundIndex(currentIndex, rate, timeElapsed);
     }
 
@@ -58,13 +60,11 @@ contract VariableInterestStrategy is IInterestStrategy {
     // Internal
     // ================================================================
 
-    function _borrowRate(
-        uint256 util,
-        uint256 slope1,
-        uint256 slope2,
-        uint256 baseRate,
-        uint256 optimal
-    ) private pure returns (uint256) {
+    function _borrowRate(uint256 util, uint256 slope1, uint256 slope2, uint256 baseRate, uint256 optimal)
+        private
+        pure
+        returns (uint256)
+    {
         if (util <= optimal) {
             // Normal zone: linear up to slope1
             uint256 utilRatio = optimal == 0 ? 0 : MathLib.rayDiv(util, optimal);

@@ -8,13 +8,7 @@ interface AggregatorV3Interface {
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
 
     function decimals() external view returns (uint8);
 }
@@ -41,17 +35,11 @@ contract ChainlinkOracle is IPriceOracle {
     function getPrice(address priceFeed) external view override returns (uint256) {
         AggregatorV3Interface feed = AggregatorV3Interface(priceFeed);
 
-        (
-            uint80 roundId,
-            int256 answer,
-            ,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = feed.latestRoundData();
+        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
 
-        require(answer > 0,                             "ChainlinkOracle: non-positive price");
-        require(updatedAt != 0,                         "ChainlinkOracle: round not complete");
-        require(answeredInRound >= roundId,             "ChainlinkOracle: stale round");
+        require(answer > 0, "ChainlinkOracle: non-positive price");
+        require(updatedAt != 0, "ChainlinkOracle: round not complete");
+        require(answeredInRound >= roundId, "ChainlinkOracle: stale round");
         require(block.timestamp - updatedAt <= stalePeriod, "ChainlinkOracle: price stale");
 
         uint8 dec = feed.decimals();

@@ -56,9 +56,9 @@ contract Deploy is Script {
             mockOracle.setPrice(wbtcFeed, 60_000 * RAY);
 
             oracleAddr = address(mockOracle);
-            usdtAddr   = address(usdt);
-            wethAddr   = address(weth);
-            wbtcAddr   = address(wbtc);
+            usdtAddr = address(usdt);
+            wethAddr = address(weth);
+            wbtcAddr = address(wbtc);
 
             usdt.mint(deployer, 1_000_000e18);
             weth.mint(deployer, 1_000e18);
@@ -81,62 +81,68 @@ contract Deploy is Script {
         Pool pool = new Pool(oracleAddr);
 
         // ── 3. Register reserves ──────────────────────────────────────
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "mUSDT",
-            tokenAddress:         usdtAddr,
-            priceFeed:            usdtFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 85 * RAY / 100,
-            ltv:                  80 * RAY / 100,
-            slope1:               4  * RAY / 100,
-            slope2:               60 * RAY / 100,
-            baseInterestRate:     2  * RAY / 100,
-            optimalUtilization:   80 * RAY / 100,
-            liquidationBonus:     5  * RAY / 100,
-            reserveFactor:        10 * RAY / 100,
-            borrowCap:            1_000_000e18,
-            supplyCap:            1_000_000e18,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "mUSDT",
+                tokenAddress: usdtAddr,
+                priceFeed: usdtFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: 85 * RAY / 100,
+                ltv: 80 * RAY / 100,
+                slope1: 4 * RAY / 100,
+                slope2: 60 * RAY / 100,
+                baseInterestRate: 2 * RAY / 100,
+                optimalUtilization: 80 * RAY / 100,
+                liquidationBonus: 5 * RAY / 100,
+                reserveFactor: 10 * RAY / 100,
+                borrowCap: 1_000_000e18,
+                supplyCap: 1_000_000e18,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "mWETH",
-            tokenAddress:         wethAddr,
-            priceFeed:            wethFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 80 * RAY / 100,
-            ltv:                  75 * RAY / 100,
-            slope1:               5  * RAY / 100,
-            slope2:               80 * RAY / 100,
-            baseInterestRate:     2  * RAY / 100,
-            optimalUtilization:   80 * RAY / 100,
-            liquidationBonus:     8  * RAY / 100,
-            reserveFactor:        15 * RAY / 100,
-            borrowCap:            10_000e18,
-            supplyCap:            10_000e18,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "mWETH",
+                tokenAddress: wethAddr,
+                priceFeed: wethFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: 80 * RAY / 100,
+                ltv: 75 * RAY / 100,
+                slope1: 5 * RAY / 100,
+                slope2: 80 * RAY / 100,
+                baseInterestRate: 2 * RAY / 100,
+                optimalUtilization: 80 * RAY / 100,
+                liquidationBonus: 8 * RAY / 100,
+                reserveFactor: 15 * RAY / 100,
+                borrowCap: 10_000e18,
+                supplyCap: 10_000e18,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "mWBTC",
-            tokenAddress:         wbtcAddr,
-            priceFeed:            wbtcFeed,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 75 * RAY / 100,
-            ltv:                  70 * RAY / 100,
-            slope1:               5  * RAY / 100,
-            slope2:               100 * RAY / 100,
-            baseInterestRate:     2  * RAY / 100,
-            optimalUtilization:   65 * RAY / 100,
-            liquidationBonus:     10 * RAY / 100,
-            reserveFactor:        20 * RAY / 100,
-            borrowCap:            1_000e18,
-            supplyCap:            1_000e18,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "mWBTC",
+                tokenAddress: wbtcAddr,
+                priceFeed: wbtcFeed,
+                interestStrategy: address(strategy),
+                liquidationThreshold: 75 * RAY / 100,
+                ltv: 70 * RAY / 100,
+                slope1: 5 * RAY / 100,
+                slope2: 100 * RAY / 100,
+                baseInterestRate: 2 * RAY / 100,
+                optimalUtilization: 65 * RAY / 100,
+                liquidationBonus: 10 * RAY / 100,
+                reserveFactor: 20 * RAY / 100,
+                borrowCap: 1_000e18,
+                supplyCap: 1_000e18,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
         // ── 4. Seed initial liquidity (local only) ────────────────────
         if (DEPLOY_LOCAL) {

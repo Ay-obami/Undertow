@@ -22,8 +22,6 @@ abstract contract LiquidationModule is PoolStorage {
     using ReserveLib for DataTypes.ReserveData;
     using MathLib for uint256;
 
-     
-
     // ================================================================
     // Liquidate
     // ================================================================
@@ -33,7 +31,7 @@ abstract contract LiquidationModule is PoolStorage {
 
         DataTypes.Position storage pos = _getPosition(user, positionId);
 
-        DataTypes.ReserveData storage borrowReserve    = _getReserve(pos.borrowReserveId);
+        DataTypes.ReserveData storage borrowReserve = _getReserve(pos.borrowReserveId);
         DataTypes.ReserveData storage collateralReserve = _getReserve(pos.collateralReserveId);
 
         borrowReserve.updateIndexes();
@@ -42,17 +40,13 @@ abstract contract LiquidationModule is PoolStorage {
         // ── 1. Health check ──────────────────────────────────────────
         uint256 debtReal = MathLib.toReal(pos.scaledDebt, borrowReserve.borrowLiquidityIndex);
 
-        uint256 borrowPrice    = IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed);
+        uint256 borrowPrice = IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed);
         uint256 collateralPrice = IPriceOracle(_oracle).getPrice(pos.collateralPriceFeed);
 
-        uint256 debtValueRay       = MathLib.rayMul(debtReal, borrowPrice);
+        uint256 debtValueRay = MathLib.rayMul(debtReal, borrowPrice);
         uint256 collateralValueRay = MathLib.rayMul(pos.collateralLocked, collateralPrice);
 
-        uint256 hf = MathLib.healthFactor(
-            collateralValueRay,
-            debtValueRay,
-            collateralReserve.liquidationThreshold
-        );
+        uint256 hf = MathLib.healthFactor(collateralValueRay, debtValueRay, collateralReserve.liquidationThreshold);
         require(hf < DataTypes.RAY, "LiquidationModule: position healthy");
 
         // ── 2. Collateral to seize (with bonus) ──────────────────────
@@ -85,15 +79,7 @@ abstract contract LiquidationModule is PoolStorage {
             IERC20(collateralReserve.tokenAddress).safeTransfer(user, leftover);
         }
 
-        emit Liquidated(
-            user,
-            msg.sender,
-            pos.collateralReserveId,
-            pos.borrowReserveId,
-            debtReal,
-            seized,
-            positionId
-        );
+        emit Liquidated(user, msg.sender, pos.collateralReserveId, pos.borrowReserveId, debtReal, seized, positionId);
     }
 
     // ================================================================
@@ -108,31 +94,24 @@ abstract contract LiquidationModule is PoolStorage {
     ///         borrow/repay touched the reserve and caught it up. Now uses the
     ///         non-mutating preview so the health check always reflects real-time debt.
     function _checkHealth(address user, uint256 positionId) internal view returns (bool) {
-    require(positionId < _positions[user].length, "invalid position");
+        require(positionId < _positions[user].length, "invalid position");
 
-    DataTypes.Position storage pos = _positions[user][positionId];
+        DataTypes.Position storage pos = _positions[user][positionId];
 
-    if (!pos.isOpen) return false;
+        if (!pos.isOpen) return false;
 
-    DataTypes.ReserveData storage borrowReserve    = _reserves[pos.borrowReserveId];
-    DataTypes.ReserveData storage collateralReserve = _reserves[pos.collateralReserveId];
+        DataTypes.ReserveData storage borrowReserve = _reserves[pos.borrowReserveId];
+        DataTypes.ReserveData storage collateralReserve = _reserves[pos.collateralReserveId];
 
-    uint256 debtReal = MathLib.toReal(pos.scaledDebt, borrowReserve.previewBorrowIndex());
+        uint256 debtReal = MathLib.toReal(pos.scaledDebt, borrowReserve.previewBorrowIndex());
 
-    uint256 debtValueRay = MathLib.rayMul(
-        debtReal,
-        IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed)
-    );
+        uint256 debtValueRay = MathLib.rayMul(debtReal, IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed));
 
-    uint256 collateralValueRay = MathLib.rayMul(
-        pos.collateralLocked,
-        IPriceOracle(_oracle).getPrice(pos.collateralPriceFeed)
-    );
+        uint256 collateralValueRay =
+            MathLib.rayMul(pos.collateralLocked, IPriceOracle(_oracle).getPrice(pos.collateralPriceFeed));
 
-    return MathLib.healthFactor(
-        collateralValueRay,
-        debtValueRay,
-        collateralReserve.liquidationThreshold
-    ) >= DataTypes.RAY;
-}
+        return
+            MathLib.healthFactor(collateralValueRay, debtValueRay, collateralReserve.liquidationThreshold)
+                >= DataTypes.RAY;
+    }
 }

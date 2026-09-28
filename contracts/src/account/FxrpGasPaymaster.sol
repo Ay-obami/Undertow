@@ -91,7 +91,7 @@ contract FxrpGasPaymaster is VerifyingPaymaster {
     ///         show the user an estimate before they approve.
     function quoteFxrpForGas(uint256 actualGasCostWei) public view returns (uint256) {
         uint256 nativePriceRay = oracle.getPrice(nativeFeedKey); // RAY-scaled USD per 1 native token
-        uint256 fxrpPriceRay = oracle.getPrice(fxrpFeedKey);     // RAY-scaled USD per 1 FXRP
+        uint256 fxrpPriceRay = oracle.getPrice(fxrpFeedKey); // RAY-scaled USD per 1 FXRP
 
         // actualGasCostWei is in 18-decimal native token units.
         uint256 gasCostUsdRay = (actualGasCostWei * nativePriceRay) / 1e18;
@@ -102,11 +102,12 @@ contract FxrpGasPaymaster is VerifyingPaymaster {
 
     /// @dev Runs the normal signature check, then carries the sponsored
     ///      account's address through to `_postOp` so it knows who to bill.
-    function _validatePaymasterUserOp(
-        PackedUserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 maxCost
-    ) internal view override returns (bytes memory context, uint256 validationData) {
+    function _validatePaymasterUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        internal
+        view
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         (, validationData) = super._validatePaymasterUserOp(userOp, userOpHash, maxCost);
         context = abi.encode(userOp.sender);
     }
@@ -116,7 +117,10 @@ contract FxrpGasPaymaster is VerifyingPaymaster {
         bytes calldata context,
         uint256 actualGasCost,
         uint256 /* actualUserOpFeePerGas */
-    ) internal override {
+    )
+        internal
+        override
+    {
         address sender = abi.decode(context, (address));
 
         uint256 fxrpOwed = quoteFxrpForGas(actualGasCost);

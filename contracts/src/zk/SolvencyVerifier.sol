@@ -28,10 +28,7 @@ contract SolvencyVerifier {
     Groth16Verifier public immutable verifier;
 
     event SolvencyProven(
-        address indexed prover,
-        uint256 indexed commitment,
-        uint256 liquidationThreshold,
-        uint256 thresholdRay
+        address indexed prover, uint256 indexed commitment, uint256 liquidationThreshold, uint256 thresholdRay
     );
 
     constructor(address _verifier) {

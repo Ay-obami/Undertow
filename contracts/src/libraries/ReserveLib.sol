@@ -23,31 +23,15 @@ library ReserveLib {
 
         uint256 util = MathLib.utilizationRate(reserve.totalBorrows, reserve.totalDeposits);
 
-        uint256 borrowRate = IInterestStrategy(reserve.interestStrategy).getBorrowRate(
-            util,
-            reserve.slope1,
-            reserve.slope2,
-            reserve.baseInterestRate,
-            reserve.optimalUtilization
-        );
+        uint256 borrowRate = IInterestStrategy(reserve.interestStrategy)
+            .getBorrowRate(util, reserve.slope1, reserve.slope2, reserve.baseInterestRate, reserve.optimalUtilization);
 
-        uint256 supplyRate = IInterestStrategy(reserve.interestStrategy).getSupplyRate(
-            borrowRate,
-            util,
-            reserve.reserveFactor
-        );
+        uint256 supplyRate =
+            IInterestStrategy(reserve.interestStrategy).getSupplyRate(borrowRate, util, reserve.reserveFactor);
 
-        reserve.borrowLiquidityIndex = MathLib.compoundIndex(
-            reserve.borrowLiquidityIndex,
-            borrowRate,
-            elapsed
-        );
+        reserve.borrowLiquidityIndex = MathLib.compoundIndex(reserve.borrowLiquidityIndex, borrowRate, elapsed);
 
-        reserve.supplyLiquidityIndex = MathLib.compoundIndex(
-            reserve.supplyLiquidityIndex,
-            supplyRate,
-            elapsed
-        );
+        reserve.supplyLiquidityIndex = MathLib.compoundIndex(reserve.supplyLiquidityIndex, supplyRate, elapsed);
 
         reserve.lastUpdateTimestamp = block.timestamp;
     }
@@ -69,13 +53,8 @@ library ReserveLib {
 
         uint256 util = MathLib.utilizationRate(reserve.totalBorrows, reserve.totalDeposits);
 
-        uint256 borrowRate = IInterestStrategy(reserve.interestStrategy).getBorrowRate(
-            util,
-            reserve.slope1,
-            reserve.slope2,
-            reserve.baseInterestRate,
-            reserve.optimalUtilization
-        );
+        uint256 borrowRate = IInterestStrategy(reserve.interestStrategy)
+            .getBorrowRate(util, reserve.slope1, reserve.slope2, reserve.baseInterestRate, reserve.optimalUtilization);
 
         return MathLib.compoundIndex(reserve.borrowLiquidityIndex, borrowRate, elapsed);
     }
@@ -122,16 +101,10 @@ library ReserveLib {
     }
 
     function assertSupplyCap(DataTypes.ReserveData storage reserve, uint256 extra) internal view {
-        require(
-            reserve.totalDeposits + extra <= reserve.supplyCap,
-            "ReserveLib: supply cap exceeded"
-        );
+        require(reserve.totalDeposits + extra <= reserve.supplyCap, "ReserveLib: supply cap exceeded");
     }
 
     function assertBorrowCap(DataTypes.ReserveData storage reserve, uint256 extra) internal view {
-        require(
-            reserve.totalBorrows + extra <= reserve.borrowCap,
-            "ReserveLib: borrow cap exceeded"
-        );
+        require(reserve.totalBorrows + extra <= reserve.borrowCap, "ReserveLib: borrow cap exceeded");
     }
 }

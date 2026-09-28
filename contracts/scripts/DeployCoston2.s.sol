@@ -66,43 +66,47 @@ contract DeployCoston2 is Script {
         Pool pool = new Pool(address(oracle));
 
         // ── 5. Register reserves ─────────────────────────────────────
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "FXRP",
-            tokenAddress:         fxrpAddr,
-            priceFeed:            fxrpAddr, // feed key == token address, see FtsoOracle
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 80 * RAY / 100,
-            ltv:                  75 * RAY / 100,
-            slope1:               5  * RAY / 100,
-            slope2:               75 * RAY / 100,
-            baseInterestRate:     1  * RAY / 100,
-            optimalUtilization:   75 * RAY / 100,
-            liquidationBonus:     8  * RAY / 100,
-            reserveFactor:        15 * RAY / 100,
-            borrowCap:            500_000e6,  // FXRP mirrors XRPL's 6-decimal precision
-            supplyCap:            500_000e6,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "FXRP",
+                tokenAddress: fxrpAddr,
+                priceFeed: fxrpAddr, // feed key == token address, see FtsoOracle
+                interestStrategy: address(strategy),
+                liquidationThreshold: 80 * RAY / 100,
+                ltv: 75 * RAY / 100,
+                slope1: 5 * RAY / 100,
+                slope2: 75 * RAY / 100,
+                baseInterestRate: 1 * RAY / 100,
+                optimalUtilization: 75 * RAY / 100,
+                liquidationBonus: 8 * RAY / 100,
+                reserveFactor: 15 * RAY / 100,
+                borrowCap: 500_000e6, // FXRP mirrors XRPL's 6-decimal precision
+                supplyCap: 500_000e6,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "WFLR",
-            tokenAddress:         wflrAddr,
-            priceFeed:            wflrAddr,
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 70 * RAY / 100,
-            ltv:                  65 * RAY / 100,
-            slope1:               6  * RAY / 100,
-            slope2:               90 * RAY / 100,
-            baseInterestRate:     2  * RAY / 100,
-            optimalUtilization:   70 * RAY / 100,
-            liquidationBonus:     10 * RAY / 100,
-            reserveFactor:        20 * RAY / 100,
-            borrowCap:            5_000_000e18,
-            supplyCap:            5_000_000e18,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "WFLR",
+                tokenAddress: wflrAddr,
+                priceFeed: wflrAddr,
+                interestStrategy: address(strategy),
+                liquidationThreshold: 70 * RAY / 100,
+                ltv: 65 * RAY / 100,
+                slope1: 6 * RAY / 100,
+                slope2: 90 * RAY / 100,
+                baseInterestRate: 2 * RAY / 100,
+                optimalUtilization: 70 * RAY / 100,
+                liquidationBonus: 10 * RAY / 100,
+                reserveFactor: 20 * RAY / 100,
+                borrowCap: 5_000_000e18,
+                supplyCap: 5_000_000e18,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
         vm.stopBroadcast();
 

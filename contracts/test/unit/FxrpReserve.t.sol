@@ -33,7 +33,7 @@ contract FxrpReserveTest is Test {
     bytes32 internal WFLR_ID;
 
     address internal alice = makeAddr("alice");
-    address internal bob   = makeAddr("bob");
+    address internal bob = makeAddr("bob");
 
     uint256 constant RAY = 1e18;
 
@@ -60,43 +60,47 @@ contract FxrpReserveTest is Test {
 
         pool = new Pool(address(oracle));
 
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "FXRP",
-            tokenAddress:         address(fxrp),
-            priceFeed:            address(fxrp),
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 80 * RAY / 100,
-            ltv:                  75 * RAY / 100,
-            slope1:               5  * RAY / 100,
-            slope2:               75 * RAY / 100,
-            baseInterestRate:     1  * RAY / 100,
-            optimalUtilization:   75 * RAY / 100,
-            liquidationBonus:     8  * RAY / 100,
-            reserveFactor:        15 * RAY / 100,
-            borrowCap:            1_000_000e18,
-            supplyCap:            1_000_000e18,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "FXRP",
+                tokenAddress: address(fxrp),
+                priceFeed: address(fxrp),
+                interestStrategy: address(strategy),
+                liquidationThreshold: 80 * RAY / 100,
+                ltv: 75 * RAY / 100,
+                slope1: 5 * RAY / 100,
+                slope2: 75 * RAY / 100,
+                baseInterestRate: 1 * RAY / 100,
+                optimalUtilization: 75 * RAY / 100,
+                liquidationBonus: 8 * RAY / 100,
+                reserveFactor: 15 * RAY / 100,
+                borrowCap: 1_000_000e18,
+                supplyCap: 1_000_000e18,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
-        pool.addReserve(DataTypes.ReserveConfig({
-            name:                 "WFLR",
-            tokenAddress:         address(wflr),
-            priceFeed:            address(wflr),
-            interestStrategy:     address(strategy),
-            liquidationThreshold: 70 * RAY / 100,
-            ltv:                  65 * RAY / 100,
-            slope1:               6  * RAY / 100,
-            slope2:               90 * RAY / 100,
-            baseInterestRate:     2  * RAY / 100,
-            optimalUtilization:   70 * RAY / 100,
-            liquidationBonus:     10 * RAY / 100,
-            reserveFactor:        20 * RAY / 100,
-            borrowCap:            50_000_000e18,
-            supplyCap:            50_000_000e18,
-            isActive:             true,
-            isBorrowable:         true
-        }));
+        pool.addReserve(
+            DataTypes.ReserveConfig({
+                name: "WFLR",
+                tokenAddress: address(wflr),
+                priceFeed: address(wflr),
+                interestStrategy: address(strategy),
+                liquidationThreshold: 70 * RAY / 100,
+                ltv: 65 * RAY / 100,
+                slope1: 6 * RAY / 100,
+                slope2: 90 * RAY / 100,
+                baseInterestRate: 2 * RAY / 100,
+                optimalUtilization: 70 * RAY / 100,
+                liquidationBonus: 10 * RAY / 100,
+                reserveFactor: 20 * RAY / 100,
+                borrowCap: 50_000_000e18,
+                supplyCap: 50_000_000e18,
+                isActive: true,
+                isBorrowable: true
+            })
+        );
 
         FXRP_ID = pool.getReserveId("FXRP");
         WFLR_ID = pool.getReserveId("WFLR");

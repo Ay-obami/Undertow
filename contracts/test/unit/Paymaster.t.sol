@@ -56,12 +56,11 @@ contract PaymasterTest is Test {
     /// @dev Builds a fully-signed paymasterAndData for `paymaster`, i.e. the
     ///      52-byte EntryPoint-parsed header (paymaster addr + both gas
     ///      limits) followed by (validUntil, validAfter, signature).
-    function _signedPaymasterAndData(
-        address pm,
-        uint256 signerPk,
-        uint48 validUntil,
-        uint48 validAfter
-    ) internal view returns (bytes memory) {
+    function _signedPaymasterAndData(address pm, uint256 signerPk, uint48 validUntil, uint48 validAfter)
+        internal
+        view
+        returns (bytes memory)
+    {
         // Header only, to compute the hash the same way the contract does.
         bytes memory header = abi.encodePacked(pm, uint128(200_000), uint128(50_000));
         PackedUserOperation memory unsigned = _buildUserOp(header);
@@ -73,7 +72,6 @@ contract PaymasterTest is Test {
 
         return abi.encodePacked(header, validUntil, validAfter, sig);
     }
-
 
     // ================================================================
     // VerifyingPaymaster
@@ -196,7 +194,7 @@ contract FxrpGasPaymasterTest is Test {
         uint256 quoted = paymaster.quoteFxrpForGas(actualGasCostWei);
 
         uint256 expectedBase = (actualGasCostWei * (3 * RAY / 100)) / RAY; // USD-RAY value of gas
-        expectedBase = (expectedBase * 1e18) / (315 * RAY / 100);          // in FXRP (18-dec)
+        expectedBase = (expectedBase * 1e18) / (315 * RAY / 100); // in FXRP (18-dec)
         uint256 expected = expectedBase + (expectedBase * 1_000) / 10_000; // +10% buffer
 
         assertEq(quoted, expected);
@@ -262,7 +260,15 @@ contract FxrpGasPaymasterTest is Test {
     function test_Constructor_RevertsOnZeroFeeCollector() public {
         vm.expectRevert("FxrpGasPaymaster: zero fee collector");
         new FxrpGasPaymaster(
-            IEntryPoint(address(entryPoint)), owner, signer, oracle, IERC20(address(fxrp)), 18, nativeFeedKey, fxrpFeedKey, address(0)
+            IEntryPoint(address(entryPoint)),
+            owner,
+            signer,
+            oracle,
+            IERC20(address(fxrp)),
+            18,
+            nativeFeedKey,
+            fxrpFeedKey,
+            address(0)
         );
     }
 }

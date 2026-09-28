@@ -36,7 +36,7 @@ contract BugAuditTest is PoolTestBase {
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 10_000e18, 0.1e18);
 
-        uint256 bobUsdtBefore  = usdt.balanceOf(bob);
+        uint256 bobUsdtBefore = usdt.balanceOf(bob);
         uint256 poolUsdtBefore = usdt.balanceOf(address(pool));
 
         vm.startPrank(bob);
@@ -158,7 +158,7 @@ contract BugAuditTest is PoolTestBase {
 
     function test_Bug4_HealthCheck_ReflectsAccruedInterest_WithNoIntermediateTouch() public {
         _deposit(alice, USDT_ID, address(usdt), 22_000e18); // tight liquidity → high utilization
-        _deposit(bob, WETH_ID, address(weth), 10e18);        // $30k collateral, LT 85%
+        _deposit(bob, WETH_ID, address(weth), 10e18); // $30k collateral, LT 85%
 
         vm.prank(bob);
         pool.borrow(WETH_ID, USDT_ID, 20_000e18, 0.05e18); // ~91% utilization → deep in slope2
