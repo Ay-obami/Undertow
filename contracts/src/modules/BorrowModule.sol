@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {DataTypes} from "../libraries/DataTypes.sol";
 import {MathLib} from "../libraries/MathLib.sol";
 import {ReserveLib} from "../libraries/ReserveLib.sol";
+import {TokenTransferLib} from "../libraries/TokenTransferLib.sol";
 import {PoolStorage} from "./PoolStorage.sol";
 import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,6 +14,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @notice Handles borrow and repay.
 abstract contract BorrowModule is PoolStorage {
     using SafeERC20 for IERC20;
+    using TokenTransferLib for IERC20;
     using ReserveLib for DataTypes.ReserveData;
     using MathLib for uint256;
 
@@ -107,7 +109,7 @@ abstract contract BorrowModule is PoolStorage {
         uint256 currentDebt = MathLib.toReal(pos.scaledDebt, borrowReserve.borrowLiquidityIndex);
         uint256 actualRepay = repayAmount > currentDebt ? currentDebt : repayAmount;
 
-        IERC20(borrowReserve.tokenAddress).safeTransferFrom(msg.sender, address(this), actualRepay);
+        IERC20(borrowReserve.tokenAddress).pullExact(msg.sender, actualRepay);
 
         // Proportional collateral release
         uint256 collateralToReturn;
@@ -147,3 +149,4 @@ abstract contract BorrowModule is PoolStorage {
         }
     }
 }
+

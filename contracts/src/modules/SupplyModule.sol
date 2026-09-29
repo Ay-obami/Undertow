@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {DataTypes} from "../libraries/DataTypes.sol";
 import {MathLib} from "../libraries/MathLib.sol";
 import {ReserveLib} from "../libraries/ReserveLib.sol";
+import {TokenTransferLib} from "../libraries/TokenTransferLib.sol";
 import {PoolStorage} from "./PoolStorage.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -13,6 +14,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 ///         Split from the monolithic Pool so each concern lives in its own file.
 abstract contract SupplyModule is PoolStorage {
     using SafeERC20 for IERC20;
+    using TokenTransferLib for IERC20;
     using ReserveLib for DataTypes.ReserveData;
     using MathLib for uint256;
 
@@ -34,7 +36,7 @@ abstract contract SupplyModule is PoolStorage {
 
         reserve.recordDeposit(amount);
 
-        IERC20(reserve.tokenAddress).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(reserve.tokenAddress).pullExact(msg.sender, amount);
 
         emit Deposit(msg.sender, reserveId, amount, scaled);
     }
@@ -74,3 +76,4 @@ abstract contract SupplyModule is PoolStorage {
         return MathLib.toReal(_scaledDeposits[reserveId][user], reserve.supplyLiquidityIndex);
     }
 }
+
