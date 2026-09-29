@@ -72,6 +72,9 @@ abstract contract LiquidationModule is PoolStorage {
         borrowReserve.recordRepay(debtReal);
         pos.isOpen = false;
 
+        // All locked collateral leaves the pool: seized plus borrower leftover.
+        collateralReserve.recordWithdrawal(pos.collateralLocked);
+
         // ── 5. Transfer seized collateral to liquidator ───────────────
         IERC20(collateralReserve.tokenAddress).safeTransfer(msg.sender, seized);
 
