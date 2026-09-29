@@ -69,11 +69,10 @@ abstract contract SupplyModule is PoolStorage {
     // View
     // ================================================================
 
-    /// @notice Current (accrued) deposit balance — pure view, no state write.
-    function _getUserDepositBalance(bytes32 reserveId, address user) internal returns (uint256) {
+    /// @notice Current accrued deposit balance without updating reserve storage.
+    function _getUserDepositBalance(bytes32 reserveId, address user) internal view returns (uint256) {
         DataTypes.ReserveData storage reserve = _reserves[reserveId];
-        reserve.updateIndexes();
-        return MathLib.toReal(_scaledDeposits[reserveId][user], reserve.supplyLiquidityIndex);
+        return MathLib.toReal(_scaledDeposits[reserveId][user], reserve.previewSupplyIndex());
     }
 }
 

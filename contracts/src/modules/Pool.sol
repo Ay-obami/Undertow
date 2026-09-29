@@ -130,12 +130,12 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
         return keccak256(abi.encodePacked(name));
     }
 
-    function getUserDepositBalance(bytes32 reserveId, address user) external returns (uint256) {
+    function getUserDepositBalance(bytes32 reserveId, address user) external view returns (uint256) {
         return _getUserDepositBalance(reserveId, user);
     }
 
-    /// @dev Pure view — no state mutation. (Bug fix: original called _updateLiquidityIndexes here)
-    function getUserBorrowBalance(bytes32 reserveId, address user) external returns (uint256) {
+    /// @notice Returns accrued borrow balance without updating reserve storage.
+    function getUserBorrowBalance(bytes32 reserveId, address user) external view returns (uint256) {
         return _getUserBorrowBalance(reserveId, user);
     }
 
@@ -173,3 +173,4 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
         return _checkHealth(user, positionId);
     }
 }
+
