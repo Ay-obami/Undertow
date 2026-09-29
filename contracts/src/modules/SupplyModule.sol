@@ -27,14 +27,15 @@ abstract contract SupplyModule is PoolStorage {
 
         DataTypes.ReserveData storage reserve = _getReserve(reserveId);
         reserve.assertActive();
-        reserve.updateIndexes(); // accrue interest before cap check (bug fix)
+        _accrueReserve(reserveId); // accrue claims before checking the cap
         reserve.assertSupplyCap(amount);
 
         // Compute scaled deposit for this user
         uint256 scaled = MathLib.toScaled(amount, reserve.supplyLiquidityIndex);
         _scaledDeposits[reserveId][msg.sender] += scaled;
 
-        reserve.recordDeposit(amount);
+        _totalScaledDeposits[reserveId] += scaled;
+        _syncReserveTotals(reserveId);
 
         IERC20(reserve.tokenAddress).pullExact(msg.sender, amount);
 
@@ -50,7 +51,7 @@ abstract contract SupplyModule is PoolStorage {
 
         DataTypes.ReserveData storage reserve = _getReserve(reserveId);
         reserve.assertActive();
-        reserve.updateIndexes();
+        _accrueReserve(reserveId);
 
         uint256 userReal = MathLib.toReal(_scaledDeposits[reserveId][msg.sender], reserve.supplyLiquidityIndex);
         require(userReal >= amount, "SupplyModule: insufficient balance");
@@ -58,7 +59,8 @@ abstract contract SupplyModule is PoolStorage {
         uint256 scaledBurnt = MathLib.toScaled(amount, reserve.supplyLiquidityIndex);
         _scaledDeposits[reserveId][msg.sender] -= scaledBurnt;
 
-        reserve.recordWithdrawal(amount);
+        _totalScaledDeposits[reserveId] -= scaledBurnt;
+        _syncReserveTotals(reserveId);
 
         IERC20(reserve.tokenAddress).safeTransfer(msg.sender, amount);
 
