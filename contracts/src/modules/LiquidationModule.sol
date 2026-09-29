@@ -36,8 +36,8 @@ abstract contract LiquidationModule is PoolStorage {
         DataTypes.ReserveData storage borrowReserve = _getReserve(pos.borrowReserveId);
         DataTypes.ReserveData storage collateralReserve = _getReserve(pos.collateralReserveId);
 
-        borrowReserve.updateIndexes();
-        collateralReserve.updateIndexes();
+        _accrueReserve(pos.borrowReserveId);
+        _accrueReserve(pos.collateralReserveId);
 
         // ── 1. Health check ──────────────────────────────────────────
         uint256 debtReal = MathLib.toReal(pos.scaledDebt, borrowReserve.borrowLiquidityIndex);
@@ -69,17 +69,20 @@ abstract contract LiquidationModule is PoolStorage {
         IERC20(borrowReserve.tokenAddress).pullExact(msg.sender, debtReal);
 
         // ── 4. Close position ─────────────────────────────────────────
-        borrowReserve.recordRepay(debtReal);
+        uint256 lockedCollateral = pos.collateralLocked;
+        _totalScaledDebt[pos.borrowReserveId] -= pos.scaledDebt;
+        _totalLockedCollateral[pos.collateralReserveId] -= lockedCollateral;
         pos.isOpen = false;
-
-        // All locked collateral leaves the pool: seized plus borrower leftover.
-        collateralReserve.recordWithdrawal(pos.collateralLocked);
+        pos.scaledDebt = 0;
+        pos.collateralLocked = 0;
+        _syncReserveTotals(pos.borrowReserveId);
+        _syncReserveTotals(pos.collateralReserveId);
 
         // ── 5. Transfer seized collateral to liquidator ───────────────
         IERC20(collateralReserve.tokenAddress).safeTransfer(msg.sender, seized);
 
         // ── 6. Return any leftover collateral (dust after bonus) ──────
-        uint256 leftover = pos.collateralLocked - seized;
+        uint256 leftover = lockedCollateral - seized;
         if (leftover > 0) {
             IERC20(collateralReserve.tokenAddress).safeTransfer(user, leftover);
         }

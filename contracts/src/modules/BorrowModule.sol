@@ -36,11 +36,12 @@ abstract contract BorrowModule is PoolStorage {
         collateralReserve.assertActive();
         borrowReserve.assertActive();
         borrowReserve.assertBorrowable();
-        borrowReserve.assertBorrowCap(amount);
 
         // Update both reserves before any math
-        collateralReserve.updateIndexes();
-        borrowReserve.updateIndexes();
+        _accrueReserve(collateralId);
+        _accrueReserve(borrowId);
+
+        borrowReserve.assertBorrowCap(amount);
 
         // USD values
         uint256 borrowPriceRay = IPriceOracle(_oracle).getPrice(borrowReserve.priceFeed);
@@ -66,10 +67,14 @@ abstract contract BorrowModule is PoolStorage {
         // Lock collateral by reducing the user's scaled deposit
         uint256 scaledLock = MathLib.toScaled(collateralRequired, collateralReserve.supplyLiquidityIndex);
         _scaledDeposits[collateralId][msg.sender] -= scaledLock;
+        _totalScaledDeposits[collateralId] -= scaledLock;
+        _totalLockedCollateral[collateralId] += collateralRequired;
 
         // Record scaled debt
         uint256 scaledDebt = MathLib.toScaled(amount, borrowReserve.borrowLiquidityIndex);
-        borrowReserve.recordBorrow(amount);
+        _totalScaledDebt[borrowId] += scaledDebt;
+        _syncReserveTotals(collateralId);
+        _syncReserveTotals(borrowId);
 
         // Open position
         uint256 posId = _positions[msg.sender].length;
@@ -103,13 +108,15 @@ abstract contract BorrowModule is PoolStorage {
         DataTypes.ReserveData storage borrowReserve = _getReserve(borrowId);
         DataTypes.ReserveData storage collateralReserve = _getReserve(collateralId);
 
-        borrowReserve.updateIndexes();
-        collateralReserve.updateIndexes();
+        _accrueReserve(borrowId);
+        _accrueReserve(collateralId);
 
         uint256 currentDebt = MathLib.toReal(pos.scaledDebt, borrowReserve.borrowLiquidityIndex);
         uint256 actualRepay = repayAmount > currentDebt ? currentDebt : repayAmount;
 
         IERC20(borrowReserve.tokenAddress).pullExact(msg.sender, actualRepay);
+
+        uint256 scaledDebtBefore = pos.scaledDebt;
 
         // Proportional collateral release
         uint256 collateralToReturn;
@@ -117,18 +124,23 @@ abstract contract BorrowModule is PoolStorage {
             // Full repay — return all locked collateral
             collateralToReturn = pos.collateralLocked;
             pos.isOpen = false;
+            pos.scaledDebt = 0;
         } else {
             collateralToReturn = MathLib.rayMul(pos.collateralLocked, MathLib.rayDiv(actualRepay, currentDebt));
             // Reduce scaled debt proportionally
             pos.scaledDebt -= MathLib.toScaled(actualRepay, borrowReserve.borrowLiquidityIndex);
-            pos.collateralLocked -= collateralToReturn;
         }
 
-        borrowReserve.recordRepay(actualRepay);
+        _totalScaledDebt[borrowId] -= scaledDebtBefore - pos.scaledDebt;
+        _totalLockedCollateral[collateralId] -= collateralToReturn;
+        pos.collateralLocked -= collateralToReturn;
 
         // Credit collateral back as a deposit
         uint256 scaledCollateral = MathLib.toScaled(collateralToReturn, collateralReserve.supplyLiquidityIndex);
         _scaledDeposits[collateralId][msg.sender] += scaledCollateral;
+        _totalScaledDeposits[collateralId] += scaledCollateral;
+        _syncReserveTotals(borrowId);
+        _syncReserveTotals(collateralId);
 
         emit Repay(msg.sender, borrowId, collateralId, actualRepay, collateralToReturn, positionId);
     }

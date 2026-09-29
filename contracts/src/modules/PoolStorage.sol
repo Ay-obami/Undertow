@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {DataTypes} from "../libraries/DataTypes.sol";
+import {MathLib} from "../libraries/MathLib.sol";
+import {ReserveLib} from "../libraries/ReserveLib.sol";
 import {IPool} from "../interfaces/IPool.sol";
 
 /// @title PoolStorage
@@ -34,6 +36,11 @@ abstract contract PoolStorage is IPool {
     /// @dev  Protocol owner — set by Pool constructor
     address internal _owner;
 
+    /// @dev Authoritative aggregate claim counters; fresh deployments only.
+    mapping(bytes32 => uint256) internal _totalScaledDeposits;
+    mapping(bytes32 => uint256) internal _totalScaledDebt;
+    mapping(bytes32 => uint256) internal _totalLockedCollateral;
+
     // ================================================================
     // Shared helpers
     // ================================================================
@@ -41,6 +48,18 @@ abstract contract PoolStorage is IPool {
     modifier onlyOwner() {
         require(msg.sender == _owner, "PoolStorage: not owner");
         _;
+    }
+
+    function _syncReserveTotals(bytes32 id) internal {
+        DataTypes.ReserveData storage reserve = _reserves[id];
+        reserve.totalBorrows = MathLib.toReal(_totalScaledDebt[id], reserve.borrowLiquidityIndex);
+        reserve.totalDeposits =
+            MathLib.toReal(_totalScaledDeposits[id], reserve.supplyLiquidityIndex) + _totalLockedCollateral[id];
+    }
+
+    function _accrueReserve(bytes32 id) internal {
+        ReserveLib.updateIndexes(_reserves[id]);
+        _syncReserveTotals(id);
     }
 
     function _getReserve(bytes32 id) internal view returns (DataTypes.ReserveData storage r) {
@@ -54,3 +73,4 @@ abstract contract PoolStorage is IPool {
         require(p.isOpen, "PoolStorage: position closed");
     }
 }
+
