@@ -137,15 +137,15 @@ abstract contract BorrowModule is PoolStorage {
     // View
     // ================================================================
 
-    function _getUserBorrowBalance(bytes32 reserveId, address user) internal returns (uint256 total) {
+    function _getUserBorrowBalance(bytes32 reserveId, address user) internal view returns (uint256 total) {
         DataTypes.Position[] storage positions = _positions[user];
         DataTypes.ReserveData storage reserve = _reserves[reserveId];
-        reserve.updateIndexes();
+        uint256 borrowIndex = reserve.previewBorrowIndex();
         uint256 len = positions.length;
         for (uint256 i; i < len; ++i) {
             if (!positions[i].isOpen) continue;
             if (positions[i].borrowReserveId != reserveId) continue;
-            total += MathLib.toReal(positions[i].scaledDebt, reserve.borrowLiquidityIndex);
+            total += MathLib.toReal(positions[i].scaledDebt, borrowIndex);
         }
     }
 }
