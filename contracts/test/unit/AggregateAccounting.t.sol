@@ -58,7 +58,7 @@ contract AggregateAccountingTest is PoolTestBase {
         uint256 debt = pool.getUserBorrowBalance(USDT_ID, alice);
         _repayUsdt(alice, debt * fraction / 10_000);
         _assertUsdtClaims();
-        vm.warp(block.timestamp + 30 days);
+        vm.warp(pool.getReserve(USDT_ID).lastUpdateTimestamp + 30 days);
         _repayUsdt(alice, type(uint256).max);
         _assertUsdtClaims();
         _repayUsdt(bob, type(uint256).max);
@@ -154,8 +154,10 @@ contract AggregateAccountingTest is PoolTestBase {
         token.approve(address(pool), type(uint256).max);
         pool.repay(WETH_ID, id, 0, type(uint256).max);
         vm.stopPrank();
-        // Stored remaining debt plus 6,000 is below the cap; newly accrued debt is above it.
-        vm.warp(block.timestamp + 365 days);
+        // Use external state to avoid optimizer reuse of block.timestamp across vm.warp calls.
+        assertLt(pool.getReserve(id).totalBorrows + 6_000e18, 20_000e18);
+        vm.warp(pool.getReserve(id).lastUpdateTimestamp + 365 days);
+        assertGt(pool.getUserBorrowBalance(id, bob) + 6_000e18, 20_000e18);
         vm.prank(bob);
         vm.expectRevert("ReserveLib: borrow cap exceeded");
         pool.borrow(WETH_ID, id, 6_000e18, 0.05e18);
