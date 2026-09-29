@@ -101,6 +101,7 @@ contract AggregateAccountingTest is PoolTestBase {
         assertEq(pool.getPosition(alice, 0).collateralLocked + pool.getPosition(bob, 0).collateralLocked, locked);
         assertApproxEqAbs(pool.getReserve(WETH_ID).totalDeposits, free + locked, 2);
     }
+
     function test_LiquidatingOneBorrowerPreservesOtherAccruedClaims() public {
         _openTwoBorrowers();
         vm.warp(block.timestamp + 365 days);
@@ -153,9 +154,10 @@ contract AggregateAccountingTest is PoolTestBase {
         token.approve(address(pool), type(uint256).max);
         pool.repay(WETH_ID, id, 0, type(uint256).max);
         vm.stopPrank();
+        // Stored remaining debt plus 6,000 is below the cap; newly accrued debt is above it.
+        vm.warp(block.timestamp + 365 days);
         vm.prank(bob);
         vm.expectRevert("ReserveLib: borrow cap exceeded");
-        pool.borrow(WETH_ID, id, 10_000e18, 0.05e18);
+        pool.borrow(WETH_ID, id, 6_000e18, 0.05e18);
     }
-
 }
