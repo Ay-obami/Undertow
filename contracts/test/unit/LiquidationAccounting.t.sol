@@ -16,7 +16,7 @@ contract LiquidationAccountingTest is PoolTestBase {
     function _liquidateBob() internal {
         vm.startPrank(alice);
         usdt.approve(address(pool), type(uint256).max);
-        pool.liquidatePosition(bob, 0);
+        pool.liquidate(bob, 0);
         vm.stopPrank();
     }
 
@@ -55,7 +55,7 @@ contract LiquidationAccountingTest is PoolTestBase {
         uint256 balance = weth.balanceOf(address(pool));
         vm.prank(alice);
         vm.expectRevert("LiquidationModule: position healthy");
-        pool.liquidatePosition(bob, 0);
+        pool.liquidate(bob, 0);
         assertEq(keccak256(abi.encode(pool.getReserve(WETH_ID))), beforeReserve);
         assertEq(weth.balanceOf(address(pool)), balance);
         assertEq(pool.getUserPositions(bob).length, 1);
