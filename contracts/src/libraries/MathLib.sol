@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {Math as OZMath} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {DataTypes} from "./DataTypes.sol";
 
 /// @title MathLib
@@ -45,6 +46,24 @@ library MathLib {
     ///         scaledAmount = amount / index
     function toScaled(uint256 amount, uint256 index) internal pure returns (uint256) {
         return rayDiv(amount, index);
+    }
+
+    /// @notice Floor-scaled credit or repayment, with full-precision intermediate multiplication.
+    function toScaledDown(uint256 amount, uint256 index) internal pure returns (uint256) {
+        require(index != 0, "MathLib: div by zero");
+        return OZMath.mulDiv(amount, RAY, index);
+    }
+
+    /// @notice Ceiling-scaled outgoing claim burn or issued debt.
+    function toScaledUp(uint256 amount, uint256 index) internal pure returns (uint256) {
+        uint256 scaled = toScaledDown(amount, index);
+        return scaled + (mulmod(amount, RAY, index) == 0 ? 0 : 1);
+    }
+
+    /// @notice Full-precision floor of a proportional amount.
+    function mulDivDown(uint256 amount, uint256 numerator, uint256 denominator) internal pure returns (uint256) {
+        require(denominator != 0, "MathLib: div by zero");
+        return OZMath.mulDiv(amount, numerator, denominator);
     }
 
     /// @notice Reconstruct real balance from scaled principal and current index.
@@ -112,3 +131,4 @@ library MathLib {
         }
     }
 }
+

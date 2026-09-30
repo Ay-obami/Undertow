@@ -41,13 +41,15 @@ abstract contract BorrowModule is PoolStorage {
         _accrueReserve(collateralId);
         _accrueReserve(borrowId);
 
-        borrowReserve.assertBorrowCap(amount);
+        uint256 scaledDebt = MathLib.toScaledUp(amount, borrowReserve.borrowLiquidityIndex);
+        uint256 issuedDebt = MathLib.toReal(scaledDebt, borrowReserve.borrowLiquidityIndex);
+        borrowReserve.assertBorrowCap(issuedDebt);
 
         // USD values
         uint256 borrowPriceRay = IPriceOracle(_oracle).getPrice(borrowReserve.priceFeed);
         uint256 collateralPriceRay = IPriceOracle(_oracle).getPrice(collateralReserve.priceFeed);
 
-        uint256 borrowValueRay = MathLib.rayMul(amount, borrowPriceRay);
+        uint256 borrowValueRay = MathLib.rayMul(issuedDebt, borrowPriceRay);
 
         // Collateral required = borrowValue / collateralPrice * (1 + buffer) / ltv
         uint256 collateralRequired = MathLib.rayDiv(
@@ -55,8 +57,18 @@ abstract contract BorrowModule is PoolStorage {
             MathLib.rayMul(collateralPriceRay, collateralReserve.ltv)
         );
 
+        require(collateralRequired > 0, "BorrowModule: zero collateral");
+        require(
+            MathLib.healthFactor(
+                MathLib.rayMul(collateralRequired, collateralPriceRay),
+                borrowValueRay,
+                collateralReserve.liquidationThreshold
+            ) >= DataTypes.RAY,
+            "BorrowModule: rounded collateral unhealthy"
+        );
+
         // Check utilization ceiling
-        uint256 newUtil = MathLib.utilizationRate(borrowReserve.totalBorrows + amount, borrowReserve.totalDeposits);
+        uint256 newUtil = MathLib.utilizationRate(borrowReserve.totalBorrows + issuedDebt, borrowReserve.totalDeposits);
         require(newUtil <= DataTypes.MAX_UTILIZATION, "BorrowModule: utilization ceiling");
 
         // Verify user has enough deposited collateral
@@ -65,16 +77,23 @@ abstract contract BorrowModule is PoolStorage {
         require(userCollateral >= collateralRequired, "BorrowModule: insufficient collateral");
 
         // Lock collateral by reducing the user's scaled deposit
-        uint256 scaledLock = MathLib.toScaled(collateralRequired, collateralReserve.supplyLiquidityIndex);
+        uint256 scaledLock = collateralRequired == userCollateral
+            ? _scaledDeposits[collateralId][msg.sender]
+            : MathLib.toScaledUp(collateralRequired, collateralReserve.supplyLiquidityIndex);
         _scaledDeposits[collateralId][msg.sender] -= scaledLock;
         _totalScaledDeposits[collateralId] -= scaledLock;
         _totalLockedCollateral[collateralId] += collateralRequired;
 
         // Record scaled debt
-        uint256 scaledDebt = MathLib.toScaled(amount, borrowReserve.borrowLiquidityIndex);
         _totalScaledDebt[borrowId] += scaledDebt;
         _syncReserveTotals(collateralId);
         _syncReserveTotals(borrowId);
+        require(borrowReserve.totalBorrows <= borrowReserve.borrowCap, "ReserveLib: borrow cap exceeded");
+        require(
+            MathLib.utilizationRate(borrowReserve.totalBorrows, borrowReserve.totalDeposits)
+                <= DataTypes.MAX_UTILIZATION,
+            "BorrowModule: utilization ceiling"
+        );
 
         // Open position
         uint256 posId = _positions[msg.sender].length;
@@ -114,6 +133,12 @@ abstract contract BorrowModule is PoolStorage {
         uint256 currentDebt = MathLib.toReal(pos.scaledDebt, borrowReserve.borrowLiquidityIndex);
         uint256 actualRepay = repayAmount > currentDebt ? currentDebt : repayAmount;
 
+        uint256 scaledRepay;
+        if (actualRepay < currentDebt) {
+            scaledRepay = MathLib.toScaledDown(actualRepay, borrowReserve.borrowLiquidityIndex);
+            require(scaledRepay > 0, "BorrowModule: amount below index precision");
+        }
+
         IERC20(borrowReserve.tokenAddress).pullExact(msg.sender, actualRepay);
 
         uint256 scaledDebtBefore = pos.scaledDebt;
@@ -126,9 +151,8 @@ abstract contract BorrowModule is PoolStorage {
             pos.isOpen = false;
             pos.scaledDebt = 0;
         } else {
-            collateralToReturn = MathLib.rayMul(pos.collateralLocked, MathLib.rayDiv(actualRepay, currentDebt));
-            // Reduce scaled debt proportionally
-            pos.scaledDebt -= MathLib.toScaled(actualRepay, borrowReserve.borrowLiquidityIndex);
+            collateralToReturn = MathLib.mulDivDown(pos.collateralLocked, scaledRepay, scaledDebtBefore);
+            pos.scaledDebt -= scaledRepay;
         }
 
         _totalScaledDebt[borrowId] -= scaledDebtBefore - pos.scaledDebt;
@@ -136,7 +160,7 @@ abstract contract BorrowModule is PoolStorage {
         pos.collateralLocked -= collateralToReturn;
 
         // Credit collateral back as a deposit
-        uint256 scaledCollateral = MathLib.toScaled(collateralToReturn, collateralReserve.supplyLiquidityIndex);
+        uint256 scaledCollateral = MathLib.toScaledDown(collateralToReturn, collateralReserve.supplyLiquidityIndex);
         _scaledDeposits[collateralId][msg.sender] += scaledCollateral;
         _totalScaledDeposits[collateralId] += scaledCollateral;
         _syncReserveTotals(borrowId);
