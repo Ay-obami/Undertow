@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useConfig } from 'wagmi'
+import { POOL_CHAIN_ID, POOL_ADDRESS, POOL_CONFIGURED } from '../lib/wagmi'
 import { fetchAllReserveData } from '../services/poolService'
 import type { ReserveInfo, RawReserveData } from '../types'
 import {
@@ -10,8 +11,8 @@ import {
 } from '../lib/math'
 
 function transformReserve(raw: RawReserveData): ReserveInfo {
-  const totalDeposits = toNumber(raw.totalDeposits)
-  const totalBorrows = toNumber(raw.totalBorrows)
+  const totalDeposits = toNumber(raw.totalDeposits, raw.decimals)
+  const totalBorrows = toNumber(raw.totalBorrows, raw.decimals)
   const utilizationRate = raw.totalDeposits === 0n
     ? 0
     : Number((raw.totalBorrows * RAY) / raw.totalDeposits) / 1e18
@@ -38,6 +39,7 @@ function transformReserve(raw: RawReserveData): ReserveInfo {
   )
 
   return {
+    decimals: raw.decimals,
     name: raw.reserveName,
     tokenAddress: raw.tokenAddress,
     priceFeed: raw.priceFeed,
@@ -50,8 +52,8 @@ function transformReserve(raw: RawReserveData): ReserveInfo {
     ltv: Number(raw.ltv) / 1e18,
     liquidationBonus: Number(raw.liquidationBonus) / 1e18,
     reserveFactor: Number(raw.reserveFactor) / 1e18,
-    borrowCap: toNumber(raw.borrowCap),
-    supplyCap: toNumber(raw.supplyCap),
+    borrowCap: toNumber(raw.borrowCap, raw.decimals),
+    supplyCap: toNumber(raw.supplyCap, raw.decimals),
     optimalUtilization: Number(raw.optimalUtilization) / 1e18,
     isActive: raw.isActive,
     isBorrowable: raw.isBorrowable,
@@ -62,7 +64,8 @@ export function useReserves() {
   const config = useConfig()
 
   const query = useQuery({
-    queryKey: ['reserves'],
+    queryKey: ['reserves', POOL_CHAIN_ID, POOL_ADDRESS],
+    enabled: POOL_CONFIGURED,
     queryFn: () => fetchAllReserveData(config),
     staleTime: 30_000,
     select: (data) => {

@@ -93,5 +93,7 @@ interface IPool {
     function getUserPositions(address user) external view returns (DataTypes.Position[] memory);
 
     function checkPositionHealth(address user, uint256 positionId) external view returns (bool);
+    function getUserPositionIds(address user) external view returns (uint256[] memory);
+    function getReserveTokenDecimals(bytes32 reserveId) external view returns (uint8);
+    function getPositionDebt(address user, uint256 positionId) external view returns (uint256);
 }
-

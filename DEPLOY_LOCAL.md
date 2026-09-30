@@ -1,9 +1,7 @@
 # Deploying locally (Anvil) for testing
 
 This covers deploying the protocol to a local Anvil node and exercising it
-end to end — deposit, borrow, repay — before touching a real network. Every
-command below was actually run against a fresh Anvil instance while writing
-this doc, not just written and assumed to work.
+end to end — deposit, borrow, repay — before touching a real network. The original author reported running this walkthrough against a fresh Anvil instance. Those historical results are not verification of the current revision; run the commands below and record the current result.
 
 This local path uses **mock tokens and a mock oracle** — no Flare-specific
 infrastructure (FTSO, FAssets) is available locally, since those only exist
@@ -30,16 +28,15 @@ cd contracts
 forge build
 ```
 
-If this is a fresh clone (not the provided zip, which already vendors
-`lib/`), install dependencies first:
+For a fresh clone, initialize the repository's pinned dependencies from the root:
 
 ```bash
-forge install foundry-rs/forge-std
-forge install OpenZeppelin/openzeppelin-contracts@v5.6.1
-forge install smartcontractkit/chainlink-brownie-contracts
-forge install eth-infinitism/account-abstraction@v0.9.0
-git clone https://github.com/flare-foundation/flare-foundry-periphery-package.git lib/flare-periphery
+git submodule update --init --recursive
+cd contracts
+forge build
 ```
+
+Avoid unpinned `forge install` or cloning dependency heads into `lib/`; they change the reviewed dependency set.
 
 `forge build` should finish with `Compiler run successful!` (a handful of
 lint notes about naming conventions are expected and harmless).
@@ -173,7 +170,7 @@ cd contracts
 forge test
 ```
 
-Expect `179 tests passed, 0 failed`. For deeper output on the full deposit/
+Use the actual test count and result from your checked-out revision; the historical count of 179 is not a current assertion. For deeper output on the full deposit/
 borrow/liquidate lifecycle, see `test/unit/BorrowModule.t.sol`,
 `test/unit/LiquidationModule.t.sol`, and `test/unit/BugAudit.t.sol`.
 
@@ -189,6 +186,7 @@ Edit `.env`:
 
 ```
 VITE_POOL_ADDRESS=<paste Pool address from step 4>
+VITE_POOL_CHAIN_ID=31337
 ```
 
 ```bash
@@ -226,7 +224,7 @@ cache, clear it: `rm -rf contracts/broadcast contracts/cache`.
 **Frontend shows zero/empty data.** Almost always `VITE_POOL_ADDRESS`
 either isn't set or doesn't match your current deployment — re-check
 `frontend/.env` against the address `forge script` actually logged, and
-make sure your wallet is connected to chain ID 31337 (Anvil), not Coston2.
+set `VITE_POOL_CHAIN_ID=31337` and connect your wallet to Anvil. The example environment defaults to Coston2 (114), so changing only the pool address is insufficient.
 
 **`insufficient funds for gas`.** Only the account that ran `forge script
 --broadcast` (the deployer) holds minted mock tokens and pool-seeded

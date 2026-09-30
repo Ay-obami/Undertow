@@ -57,6 +57,8 @@ abstract contract SupplyModule is PoolStorage {
         uint256 userReal = MathLib.toReal(_scaledDeposits[reserveId][msg.sender], reserve.supplyLiquidityIndex);
         require(userReal >= amount, "SupplyModule: insufficient balance");
 
+        require(_availableCash(reserveId) >= amount, "SupplyModule: insufficient available cash");
+
         uint256 scaledBurnt = amount == userReal
             ? _scaledDeposits[reserveId][msg.sender]
             : MathLib.toScaledUp(amount, reserve.supplyLiquidityIndex);
@@ -80,4 +82,3 @@ abstract contract SupplyModule is PoolStorage {
         return MathLib.toReal(_scaledDeposits[reserveId][user], reserve.previewSupplyIndex());
     }
 }
-

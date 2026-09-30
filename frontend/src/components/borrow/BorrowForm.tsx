@@ -1,6 +1,8 @@
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { parseUnits } from 'viem'
+import { formatUnits } from 'viem'
+import { parseTokenAmount } from '../../lib/frontendSafety'
 import { useReserves } from '../../hooks/useReserves'
 import { useContract } from '../../hooks/useContract'
 import { TxStatusBar, Skeleton } from '../common'
@@ -40,7 +42,7 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
     setIsBusy(true)
     resetTxState()
     try {
-      const parsed = parseUnits(amount, 18)
+      const parsed = parseTokenAmount(amount, borrowReserve!.decimals)
       // bufferPercent is RAY-scaled (1e18 = 100%)
       const bufferRay = BigInt(Math.round(bufferPct * 1e18))
       await borrow(collateral, borrowAsset, parsed, bufferRay)
@@ -49,8 +51,8 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
       setAmount('')
       setStep(1)
       onSuccess?.()
-    } catch {
-      // error handled in hook
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Transaction failed')
     } finally {
       setIsBusy(false)
     }

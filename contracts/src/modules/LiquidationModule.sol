@@ -45,8 +45,8 @@ abstract contract LiquidationModule is PoolStorage {
         uint256 borrowPrice = IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed);
         uint256 collateralPrice = IPriceOracle(_oracle).getPrice(pos.collateralPriceFeed);
 
-        uint256 debtValueRay = MathLib.rayMul(debtReal, borrowPrice);
-        uint256 collateralValueRay = MathLib.rayMul(pos.collateralLocked, collateralPrice);
+        uint256 debtValueRay = _assetValue(pos.borrowReserveId, debtReal, borrowPrice);
+        uint256 collateralValueRay = _assetValue(pos.collateralReserveId, pos.collateralLocked, collateralPrice);
 
         uint256 hf = MathLib.healthFactor(collateralValueRay, debtValueRay, collateralReserve.liquidationThreshold);
         require(hf < DataTypes.RAY, "LiquidationModule: position healthy");
@@ -54,7 +54,7 @@ abstract contract LiquidationModule is PoolStorage {
         // ── 2. Collateral to seize (with bonus) ──────────────────────
         //   debtRepaidInCollateralUnits = debtValueRay / collateralPrice
         //   seized = debtRepaidInCollateral * (1 + liquidationBonus)
-        uint256 debtInCollateralUnits = MathLib.rayDiv(debtValueRay, collateralPrice);
+        uint256 debtInCollateralUnits = _assetAmount(pos.collateralReserveId, debtValueRay, collateralPrice);
         uint256 seized = MathLib.rayMul(
             debtInCollateralUnits,
             DataTypes.RAY + collateralReserve.liquidationBonus // BUG FIX: was ignored
@@ -95,12 +95,6 @@ abstract contract LiquidationModule is PoolStorage {
     // ================================================================
 
     /// @notice Returns true when HF >= 1 RAY (position is healthy).
-    ///
-    ///         Bug fix vs original: this used to read `borrowReserve.borrowLiquidityIndex`
-    ///         directly, which can be stale (see `ReserveLib.previewBorrowIndex`) — a
-    ///         position could look healthy here right up until someone else's deposit/
-    ///         borrow/repay touched the reserve and caught it up. Now uses the
-    ///         non-mutating preview so the health check always reflects real-time debt.
     function _checkHealth(address user, uint256 positionId) internal view returns (bool) {
         require(positionId < _positions[user].length, "invalid position");
 
@@ -113,14 +107,15 @@ abstract contract LiquidationModule is PoolStorage {
 
         uint256 debtReal = MathLib.toReal(pos.scaledDebt, borrowReserve.previewBorrowIndex());
 
-        uint256 debtValueRay = MathLib.rayMul(debtReal, IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed));
+        uint256 debtValueRay =
+            _assetValue(pos.borrowReserveId, debtReal, IPriceOracle(_oracle).getPrice(pos.borrowPriceFeed));
 
-        uint256 collateralValueRay =
-            MathLib.rayMul(pos.collateralLocked, IPriceOracle(_oracle).getPrice(pos.collateralPriceFeed));
+        uint256 collateralValueRay = _assetValue(
+            pos.collateralReserveId, pos.collateralLocked, IPriceOracle(_oracle).getPrice(pos.collateralPriceFeed)
+        );
 
         return
             MathLib.healthFactor(collateralValueRay, debtValueRay, collateralReserve.liquidationThreshold)
                 >= DataTypes.RAY;
     }
 }
-

@@ -49,10 +49,11 @@ abstract contract BorrowModule is PoolStorage {
         uint256 borrowPriceRay = IPriceOracle(_oracle).getPrice(borrowReserve.priceFeed);
         uint256 collateralPriceRay = IPriceOracle(_oracle).getPrice(collateralReserve.priceFeed);
 
-        uint256 borrowValueRay = MathLib.rayMul(issuedDebt, borrowPriceRay);
+        uint256 borrowValueRay = _assetValue(borrowId, issuedDebt, borrowPriceRay);
 
         // Collateral required = borrowValue / collateralPrice * (1 + buffer) / ltv
-        uint256 collateralRequired = MathLib.rayDiv(
+        uint256 collateralRequired = _assetAmount(
+            collateralId,
             MathLib.rayMul(borrowValueRay, DataTypes.RAY + bufferPercent),
             MathLib.rayMul(collateralPriceRay, collateralReserve.ltv)
         );
@@ -60,7 +61,7 @@ abstract contract BorrowModule is PoolStorage {
         require(collateralRequired > 0, "BorrowModule: zero collateral");
         require(
             MathLib.healthFactor(
-                MathLib.rayMul(collateralRequired, collateralPriceRay),
+                _assetValue(collateralId, collateralRequired, collateralPriceRay),
                 borrowValueRay,
                 collateralReserve.liquidationThreshold
             ) >= DataTypes.RAY,
@@ -75,6 +76,9 @@ abstract contract BorrowModule is PoolStorage {
         uint256 userCollateral =
             MathLib.toReal(_scaledDeposits[collateralId][msg.sender], collateralReserve.supplyLiquidityIndex);
         require(userCollateral >= collateralRequired, "BorrowModule: insufficient collateral");
+
+        require(_availableCash(borrowId) >= amount, "BorrowModule: insufficient available cash");
+        require(_availableCash(collateralId) >= collateralRequired, "BorrowModule: collateral cash unavailable");
 
         // Lock collateral by reducing the user's scaled deposit
         uint256 scaledLock = collateralRequired == userCollateral
@@ -185,4 +189,3 @@ abstract contract BorrowModule is PoolStorage {
         }
     }
 }
-

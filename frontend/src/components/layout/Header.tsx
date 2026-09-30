@@ -1,3 +1,5 @@
+import { useSwitchChain } from 'wagmi'
+import { POOL_CONFIGURED, POOL_CHAIN_ID } from '../../lib/wagmi'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { shortenAddress } from '../../lib/math'
 
@@ -8,7 +10,7 @@ export function Header({
   activeTab: 'markets' | 'positions' | 'borrow'
   onTabChange: (tab: 'markets' | 'positions' | 'borrow') => void
 }) {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chainId } = useAccount()
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
 
@@ -18,8 +20,12 @@ export function Header({
     { id: 'borrow', label: 'Borrow' },
   ]
 
+  const { switchChain } = useSwitchChain()
   return (
     <header className="sticky top-0 z-30 border-b border-[#2A2A2E] bg-[#0B0B0C]/90 backdrop-blur-sm">
+      {!POOL_CONFIGURED && <div className="text-sm text-amber-400">Pool deployment is not configured.</div>}
+      {POOL_CONFIGURED && isConnected && chainId !== POOL_CHAIN_ID && <button onClick={() => switchChain({ chainId: POOL_CHAIN_ID })} className="text-sm text-amber-400">Switch wallet to chain {POOL_CHAIN_ID}</button>}
+
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
         {/* Logo */}
         <div className="flex items-center gap-3 shrink-0">

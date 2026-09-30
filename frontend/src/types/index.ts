@@ -3,6 +3,7 @@
 // (field ORDER matters for ABI struct decoding — see lib/abi.ts).
 
 export interface RawReserveData {
+  decimals: number // hydrated through getReserveTokenDecimals
   id: `0x${string}`
   reserveName: string
   tokenAddress: `0x${string}`
@@ -47,6 +48,7 @@ export interface RawPosition {
 // ─── Human-readable UI models ──────────────────────────────────────────────
 
 export interface ReserveInfo {
+  decimals: number
   name: string
   tokenAddress: `0x${string}`
   priceFeed: `0x${string}`
@@ -67,6 +69,7 @@ export interface ReserveInfo {
 }
 
 export interface PositionInfo {
+  debtAmount: bigint
   id: number
   collateralAsset: string     // resolved display name (falls back to a
   borrowAsset: string         // shortened reserveId if the reserve wasn't found)

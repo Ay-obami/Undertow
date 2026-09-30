@@ -1,4 +1,8 @@
-# Lending & Borrowing Protocol
+# Undertow — Flare lending research fork
+
+Undertow is the Flare/Coston2 adaptation of [Lending_Borrowing_Protocol](https://github.com/Ay-obami/Lending_Borrowing_Protocol). The latter is the recommended canonical home for shared lending-core maintenance; this repository preserves Flare integration and experimental hackathon work. Neither repository is an independently audited or production-ready lending market.
+
+Supported development scope: direct-wallet lending calls and test environments. The standalone ZK verifier and ERC-4337 paymasters are research demos, excluded from the supported lending deployment path. See `SCOPE.md`.
 
 Monorepo — Foundry contracts + React frontend as separate workspaces.
 
@@ -76,7 +80,7 @@ forge script scripts/DeployCoston2.s.sol --rpc-url coston2 --broadcast
 
 Needs a funded deployer (get testnet C2FLR from the
 [Coston2 faucet](https://faucet.flare.network/coston2)). See
-`scripts/fassets/README.md` for how to also mint FXRP from real XRP —
+`contracts/scripts/fassets/README.md` for how to also mint FXRP from real XRP —
 though on Coston2 you can just grab testnet FXRP from the same faucet.
 
 ### Frontend
@@ -120,10 +124,11 @@ See `AUDIT_WEEK3.md` for the full re-audit writeup (all four bugs the PRD
 calls out as previously self-audited, re-verified with tests against this
 ported codebase).
 
-## Private solvency proofs (ZK)
+## Experimental arithmetic proofs (ZK)
 
-Users can prove "my health factor is ≥ X" without revealing their collateral
-or debt amounts, via a Circom circuit + on-chain Groth16 verifier:
+The circuit proves a threshold inequality for private, self-reported collateral/debt values behind a Poseidon commitment. It does not prove a user's actual Pool solvency: no Pool position, account ownership, chain, timestamp, current prices, or current debt index is authenticated. Proofs can be copied and replayed. `SolvencyProven` identifies the transaction caller, not an authenticated position owner. Do not use the verifier or its events for lending authorization, higher LTV, collateral release, liquidation decisions, or current-solvency badges.
+
+Generate the standalone demo with:
 
 ```bash
 cd circuits
@@ -137,7 +142,7 @@ writeup, including an important caveat: the trusted setup in this repo is
 dev-scale (single local contribution), fine for a hackathon demo but not for
 anything gating real funds without redoing it against a public ceremony.
 
-## Gasless deposit/repay (ERC-4337)
+## Experimental ERC-4337 account layer
 
 `src/account/VerifyingPaymaster.sol` sponsors gas for UserOperations
 pre-approved by an off-chain signer; `src/account/FxrpGasPaymaster.sol`
@@ -149,18 +154,11 @@ actually present, so this was built fresh against
 [eth-infinitism's v0.9 account-abstraction](https://github.com/eth-infinitism/account-abstraction)
 rather than reconnected.
 
-```bash
-FTSO_ORACLE=0x... VERIFYING_SIGNER=0x... \
-  forge script scripts/DeployAccountLayer.s.sol --rpc-url coston2 --broadcast
-```
+`contracts/scripts/DeployAccountLayer.s.sol` is retained as an experimental deployment artifact. It creates a fresh EntryPoint, account factory and funded paymasters; this does not establish bundler support or absence of a canonical EntryPoint deployment. It is excluded from the supported lending deployment instructions.
 
-deploys a fresh `EntryPoint` (v0.9 is too recent to assume a canonical
-pre-deployed address exists on Coston2), a `SimpleAccountFactory`, and both
-paymasters, funding each with a starting EntryPoint deposit. Run after
-`DeployCoston2.s.sol` — it needs that script's `FtsoOracle` address.
+`test/unit/Paymaster.t.sol` instantiates a real EntryPoint and uses real paymaster ECDSA signatures, but impersonates the EntryPoint for direct callback tests. It does not execute `handleOps`, validate a real account signature/nonce, prove gas settlement, or establish bundler/frontend interoperability. This is not a verified gasless deposit/repay lifecycle.
 
-Tested against a real deployed `EntryPoint` (not a mock) with real ECDSA
-signatures — see `test/unit/Paymaster.t.sol`.
+The FXRP paymaster performs post-execution billing without escrow or a validation-time maximum-charge reserve. Missing/revoked allowance, spent balances, a reverted approval batch, or oracle failure can make billing revert while sponsorship still consumes native funds. Keep both paymasters outside the supported deployment path and do not fund them as a public service.
 
 ## Frontend fixes from original
 
@@ -177,5 +175,23 @@ hooks had genuine bugs from an incomplete bytes32-ID migration (visible in
 | `useHealthFactor` called a `getReserveData` function that no longer exists, with name-string args | Fixed to call `getReserve` with the position's bytes32 `collateralReserveId`/`borrowReserveId` |
 | `usePositions` built its reserve lookup map keyed by a `raw.collateralAsset` string field that isn't on the actual `Position` struct | Keyed by `raw.id` (bytes32) instead, resolving display names from the matching reserve |
 
-Verified with `tsc --noEmit` (clean) and a full `vite build` (succeeds) —
-not just read for plausibility.
+The original author reported clean TypeScript and Vite builds for that revision. Run the current frontend checks after configuration or code changes; those historical results do not establish current behavior.
+
+
+## Explicit experimental deployment opt-in
+
+The account deployment script aborts before configuration reads or broadcast unless `ENABLE_EXPERIMENTAL_ACCOUNT_LAYER=true`. Both paymaster deposits default to zero. For an isolated experiment, explicitly opt in:
+
+```bash
+ENABLE_EXPERIMENTAL_ACCOUNT_LAYER=true \
+FTSO_ORACLE=0x... VERIFYING_SIGNER=0x... \
+forge script scripts/DeployAccountLayer.s.sol --rpc-url coston2
+```
+
+This command simulates and does not broadcast. `EXPERIMENTAL_PAYMASTER_DEPOSIT` is an optional amount in native-token wei deposited into **each** paymaster; leave it unset for zero funding. Opt-in does not resolve the lifecycle or recovery limitations above.
+
+## Final lending audit workstream
+
+Native-decimal valuation, reserved collateral cash, bounded reserve configuration, full-precision arithmetic, oracle boundary checks and stable position IDs are covered by regression tests. The frontend reads accrued per-position debt and verifies full repayment after receipt. CI runs contract formatting/build/tests, fail-on-revert stateful invariants, frontend tests and a production client build.
+
+See [lending policy](contracts/LENDING_POLICY.md), [oracle validation](contracts/ORACLE_VALIDATION.md) and [fork validation](contracts/FORK_VALIDATION.md) for behavior, reproducible checks and limitations. Use a fresh deployment for these changes.

@@ -1,18 +1,18 @@
+import { toast } from 'sonner'
 import { useState, useEffect } from 'react'
 import type { PositionInfo } from '../../types'
 import {
   Skeleton,
-  RiskBadge,
-  HealthFactorDisplay,
   Modal,
   TxStatusBar,
 } from '../common'
-import { formatNumber, formatPercent, getRiskLevel } from '../../lib/math'
+import { formatNumber, formatPercent } from '../../lib/math'
 import { useHealthFactor } from '../../hooks/useHealthFactor'
 import { useAccount } from 'wagmi'
 import { useContract } from '../../hooks/useContract'
 import { useReserves } from '../../hooks/useReserves'
-import { parseUnits } from 'viem'
+import { formatUnits } from 'viem'
+import { parseTokenAmount, MAX_REPAY } from '../../lib/frontendSafety'
 
 // ─── Position Card ─────────────────────────────────────────────────────────
 export function PositionCard({
@@ -32,20 +32,20 @@ export function PositionCard({
     return () => clearTimeout(timer)
   }, [position.id])
 
-  const level = hf !== undefined ? getRiskLevel(hf) : 'healthy'
+  const level = hf === false ? 'danger' : 'healthy'
 
   return (
     <button
       onClick={onClick}
       className={`card p-5 text-left w-full transition-all duration-200 group hover:border-[#3A3A3E] hover:bg-[#1C1C1F]
-        ${level === 'danger' ? 'border-[#EF4444]/20' : level === 'warning' ? 'border-[#EAB308]/20' : ''}`}
+        ${level === 'danger' ? 'border-[#EF4444]/20' : ''}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="font-mono text-xs text-[#6B7280]">Position #{position.id}</span>
-            {hf !== undefined && <RiskBadge healthFactor={hf} />}
+            {hf !== undefined && <span className="text-xs">{hf ? 'Healthy' : 'At risk'}</span>}
           </div>
           <div className="flex items-center gap-2">
             <span className="font-display font-bold text-white">{position.collateralAsset}</span>
@@ -69,7 +69,7 @@ export function PositionCard({
       {/* Metrics grid */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[#0B0B0C] rounded-lg p-2.5">
-          <div className="stat-label mb-0.5">Real Debt</div>
+          <div className="stat-label mb-0.5">Current Debt</div>
           <div className="font-mono font-semibold text-white text-sm">
             {formatNumber(position.realDebt)} <span className="text-[#6B7280] text-xs">{position.borrowAsset}</span>
           </div>
@@ -87,8 +87,8 @@ export function PositionCard({
           </div>
         </div>
         <div className="bg-[#0B0B0C] rounded-lg p-2.5">
-          <div className="stat-label mb-0.5">Health Factor</div>
-          <HealthFactorDisplay healthFactor={hf} loading={hfLoading} />
+          <div className="stat-label mb-0.5">On-chain health</div>
+          <span>{hfLoading ? 'Loading…' : hf === undefined ? 'Unavailable' : hf ? 'Healthy' : 'At risk'}</span>
         </div>
       </div>
     </button>
@@ -111,7 +111,13 @@ export function PositionDetailModal({
   const { repay, txState, resetTxState } = useContract()
 
   const [repayAmount, setRepayAmount] = useState('')
+  const [fullRepay, setFullRepay] = useState(false)
   const [isRepaying, setIsRepaying] = useState(false)
+
+  useEffect(() => {
+    setRepayAmount('')
+    setFullRepay(false)
+  }, [position?.id, open])
 
   if (!position) return null
 
@@ -122,7 +128,7 @@ export function PositionDetailModal({
     setIsRepaying(true)
     resetTxState()
     try {
-      const amount = parseUnits(repayAmount, 18)
+      const amount = fullRepay ? MAX_REPAY : parseTokenAmount(repayAmount, borrowReserve.decimals)
       await repay(
         position.collateralAsset,
         position.borrowAsset,
@@ -132,15 +138,16 @@ export function PositionDetailModal({
         address,
       )
       setRepayAmount('')
+      setFullRepay(false)
       onClose()
-    } catch {
-      // error handled in hook
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Transaction failed')
     } finally {
       setIsRepaying(false)
     }
   }
 
-  const setMaxRepay = () => setRepayAmount(position.realDebt.toFixed(6))
+  const setMaxRepay = () => { setRepayAmount(borrowReserve ? formatUnits(position.debtAmount, borrowReserve.decimals) : ''); setFullRepay(true) }
 
   return (
     <Modal open={open} onClose={onClose} title={`Position #${position.id} Detail`}>
@@ -174,8 +181,8 @@ export function PositionDetailModal({
             </div>
           </div>
           <div className="bg-[#0B0B0C] rounded-lg p-3">
-            <div className="stat-label mb-1">Health Factor</div>
-            <HealthFactorDisplay healthFactor={hf} loading={hfLoading} />
+            <div className="stat-label mb-1">On-chain health</div>
+            <span>{hfLoading ? 'Loading…' : hf === undefined ? 'Unavailable' : hf ? 'Healthy' : 'At risk'}</span>
           </div>
         </div>
 
@@ -189,7 +196,7 @@ export function PositionDetailModal({
               <input
                 type="number"
                 value={repayAmount}
-                onChange={(e) => setRepayAmount(e.target.value)}
+                onChange={(e) => { setRepayAmount(e.target.value); setFullRepay(false) }}
                 placeholder="0.0"
                 className="input-field pr-16"
                 min="0"
@@ -199,7 +206,7 @@ export function PositionDetailModal({
                 onClick={setMaxRepay}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-accent hover:text-blue-400 font-medium px-2 py-1 rounded"
               >
-                MAX
+                REPAY ALL
               </button>
             </div>
             <div className="text-xs text-[#6B7280]">
@@ -211,7 +218,7 @@ export function PositionDetailModal({
               disabled={!repayAmount || Number(repayAmount) <= 0 || isRepaying}
               className="btn-primary w-full"
             >
-              {isRepaying ? 'Processing…' : 'Repay'}
+              {isRepaying ? 'Processing…' : fullRepay ? 'Repay All' : 'Repay'}
             </button>
           </div>
         </div>

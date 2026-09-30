@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {DataTypes} from "../libraries/DataTypes.sol";
 import {MathLib} from "../libraries/MathLib.sol";
@@ -30,6 +31,7 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard 
 
     constructor(address oracle) {
         require(oracle != address(0), "Pool: zero oracle");
+        require(oracle.code.length > 0, "Pool: oracle has no code");
         _oracle = oracle;
         _owner = msg.sender;
     }
@@ -78,6 +80,26 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard 
         require(cfg.priceFeed != address(0), "Pool: zero feed");
         require(cfg.interestStrategy != address(0), "Pool: zero strategy");
         require(cfg.ltv < cfg.liquidationThreshold, "Pool: ltv >= threshold");
+        require(cfg.ltv > 0 && cfg.ltv <= DataTypes.RAY, "Pool: invalid ltv");
+        require(cfg.liquidationThreshold <= DataTypes.RAY, "Pool: invalid liquidation threshold");
+        require(cfg.reserveFactor <= DataTypes.RAY, "Pool: invalid reserve factor");
+        require(
+            cfg.optimalUtilization > 0 && cfg.optimalUtilization < DataTypes.RAY, "Pool: invalid optimal utilization"
+        );
+        require(cfg.liquidationBonus <= DataTypes.RAY, "Pool: invalid liquidation bonus");
+        require(
+            cfg.slope1 <= DataTypes.RAY && cfg.slope2 <= DataTypes.RAY && cfg.baseInterestRate <= DataTypes.RAY,
+            "Pool: invalid rate"
+        );
+        require(!_listedTokens[cfg.tokenAddress], "Pool: token already listed");
+        require(cfg.tokenAddress.code.length > 0, "Pool: token has no code");
+        require(cfg.interestStrategy.code.length > 0, "Pool: strategy has no code");
+        require(cfg.supplyCap > 0, "Pool: invalid supply cap");
+        require(cfg.borrowCap > 0, "Pool: invalid borrow cap");
+        uint8 precision = IERC20Metadata(cfg.tokenAddress).decimals();
+        require(precision <= 18, "Pool: unsupported token decimals");
+        _tokenDecimals[id] = precision;
+        _listedTokens[cfg.tokenAddress] = true;
 
         DataTypes.ReserveData storage r = _reserves[id];
         r.id = id;
@@ -173,6 +195,31 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard 
         return result;
     }
 
+    /// @notice Stable storage indices corresponding to getUserPositions, in the same order.
+    function getUserPositionIds(address user) external view override returns (uint256[] memory ids) {
+        DataTypes.Position[] storage positions = _positions[user];
+        uint256 count;
+        for (uint256 i; i < positions.length; ++i) {
+            if (positions[i].isOpen) ++count;
+        }
+        ids = new uint256[](count);
+        uint256 next;
+        for (uint256 i; i < positions.length; ++i) {
+            if (positions[i].isOpen) ids[next++] = i;
+        }
+    }
+
+    function getReserveTokenDecimals(bytes32 reserveId) external view override returns (uint8) {
+        _getReserve(reserveId);
+        return _tokenDecimals[reserveId];
+    }
+
+    /// @notice Current accrued native-unit debt for an open position without changing storage.
+    function getPositionDebt(address user, uint256 positionId) external view override returns (uint256) {
+        DataTypes.Position storage pos = _getPosition(user, positionId);
+        return MathLib.toReal(pos.scaledDebt, _reserves[pos.borrowReserveId].previewBorrowIndex());
+    }
+
     function getPosition(address user, uint256 positionId) external view returns (DataTypes.Position memory) {
         return _getPosition(user, positionId);
     }
@@ -181,4 +228,3 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard 
         return _checkHealth(user, positionId);
     }
 }
-

@@ -12,15 +12,16 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 
 /// @title DeployAccountLayer
-/// @notice Week 5 deploy script — stands up the ERC-4337 account layer on
-///         Coston2 and wires it to the FXRP/WFLR reserves from
-///         DeployCoston2.s.sol, so deposit/repay can be sponsored gaslessly
-///         (optionally billed back in FXRP).
+/// @notice Experimental account-layer deployment, excluded from supported
+///         lending deployments. Creates EntryPoint, factory and paymasters;
+///         it does not establish a working handleOps/bundler/frontend flow
+///         or guarantee FXRP recovery. Funding defaults to zero.
 ///
 ///         Run *after* DeployCoston2.s.sol — needs its FtsoOracle and FXRP
 ///         addresses.
 ///
 ///         Usage:
+///           ENABLE_EXPERIMENTAL_ACCOUNT_LAYER=true \
 ///           FTSO_ORACLE=0x... VERIFYING_SIGNER=0x... \
 ///           forge script scripts/DeployAccountLayer.s.sol --rpc-url coston2 --broadcast
 ///
@@ -32,6 +33,11 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 ///         anything beyond one).
 contract DeployAccountLayer is Script {
     function run() external {
+        require(
+            vm.envOr("ENABLE_EXPERIMENTAL_ACCOUNT_LAYER", false),
+            "DeployAccountLayer: experimental account layer disabled"
+        );
+        uint256 experimentalDeposit = vm.envOr("EXPERIMENTAL_PAYMASTER_DEPOSIT", uint256(0));
         address ftsoOracle = vm.envAddress("FTSO_ORACLE"); // from DeployCoston2.s.sol output — no broadcast dependency, safe to read early
 
         vm.startBroadcast();
@@ -45,11 +51,9 @@ contract DeployAccountLayer is Script {
         address verifyingSigner = vm.envOr("VERIFYING_SIGNER", deployer);
 
         // ── 1. EntryPoint + account factory ──────────────────────────
-        // Coston2 doesn't have a canonical v0.9 EntryPoint pre-deployed
-        // (v0.9 is recent), so this deploys a fresh one rather than
-        // assuming an address. If your bundler/infra expects the canonical
-        // ERC-4337 EntryPoint address instead, point VERIFYING_SIGNER's
-        // infra at this deployed address, or swap in the canonical one here.
+        // This experiment deploys a fresh EntryPoint. It makes no claim about
+        // canonical deployments on Coston2; configure and verify bundler
+        // compatibility with this exact EntryPoint before experiments.
         EntryPoint entryPoint = new EntryPoint();
         SimpleAccountFactory accountFactory = new SimpleAccountFactory(IEntryPoint(address(entryPoint)));
 
@@ -80,10 +84,14 @@ contract DeployAccountLayer is Script {
         // ── 4. Fund both paymasters' EntryPoint deposits ─────────────
         // A paymaster needs a deposit at the EntryPoint to actually sponsor
         // gas — this is separate from the paymaster contract's own balance.
-        // Amounts here are a starting point for a demo, not a sizing
-        // recommendation; top up via `paymaster.deposit{value: ...}()`.
-        verifyingPaymaster.deposit{value: 0.05 ether}();
-        fxrpPaymaster.deposit{value: 0.05 ether}();
+        // Funding defaults to zero. EXPERIMENTAL_PAYMASTER_DEPOSIT explicitly
+        // requests the same native-token deposit for each paymaster.
+        // Public sponsorship is outside the supported lending scope.
+        // Leave both deposits empty unless explicitly requested for an experiment.
+        if (experimentalDeposit > 0) {
+            verifyingPaymaster.deposit{value: experimentalDeposit}();
+            fxrpPaymaster.deposit{value: experimentalDeposit}();
+        }
 
         vm.stopBroadcast();
 

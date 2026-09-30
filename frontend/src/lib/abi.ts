@@ -9,13 +9,6 @@
  * (consider running `forge inspect Pool abi` and diffing against this file
  * after any contract change that touches reserve/position shape).
  *
- * Note: `getUserDepositBalance`/`getUserBorrowBalance` are declared `view`
- * here even though IPool.sol declares them plain `external` (they call
- * `updateIndexes` internally, which writes state) — this frontend only ever
- * calls them through `readContract`, i.e. as an `eth_call` that can't
- * persist state regardless of the ABI's stated mutability. Declaring them
- * `view` here is what lets wagmi's typed `readContract` accept them; it has
- * no effect on the deployed contract's actual behavior.
  */
 
 const reserveDataComponents = [
@@ -55,6 +48,10 @@ const positionComponents = [
 ] as const
 
 export const POOL_ABI = [
+  { type: 'function', name: 'getPositionDebt', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }, { name: 'positionId', type: 'uint256' }], outputs: [{ name: '', type: 'uint256' }] },
+  { type: 'function', name: 'getUserPositionIds', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }], outputs: [{ name: '', type: 'uint256[]' }] },
+  { type: 'function', name: 'getReserveTokenDecimals', stateMutability: 'view', inputs: [{ name: 'reserveId', type: 'bytes32' }], outputs: [{ name: '', type: 'uint8' }] },
+  { type: 'function', name: 'getPosition', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }, { name: 'positionId', type: 'uint256' }], outputs: [{ name: '', type: 'tuple', components: positionComponents }] },
   // ── Core user actions ──────────────────────────────────────────
   {
     type: 'function',

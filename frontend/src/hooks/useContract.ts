@@ -1,3 +1,4 @@
+import { repaymentApprovalAmount } from '../lib/frontendSafety'
 import { useState, useCallback } from 'react'
 import { useConfig } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
@@ -10,6 +11,7 @@ import {
   repayToPool,
   liquidatePosition,
   fetchAllowance,
+  fetchTokenBalance,
 } from '../services/poolService'
 import { POOL_ADDRESS } from '../lib/wagmi'
 import { decodeContractError } from '../lib/math'
@@ -24,7 +26,8 @@ export function useContract() {
   const invalidateCache = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['reserves'] })
     queryClient.invalidateQueries({ queryKey: ['positions'] })
-    queryClient.invalidateQueries({ queryKey: ['healthFactor'] })
+    queryClient.invalidateQueries({ queryKey: ['tokenBalance'] })
+    queryClient.invalidateQueries({ queryKey: ['readContract'] })
   }, [queryClient])
 
   const withTx = useCallback(
@@ -115,7 +118,9 @@ export function useContract() {
       tokenAddress: `0x${string}`,
       owner: `0x${string}`,
     ) => {
-      await ensureAllowance(tokenAddress, owner, repayAmount)
+      const walletBalance = await fetchTokenBalance(config, tokenAddress, owner)
+      const approvalAmount = repaymentApprovalAmount(repayAmount, walletBalance)
+      await ensureAllowance(tokenAddress, owner, approvalAmount)
       const collateralId = computeReserveId(collateralName)
       const borrowId = computeReserveId(borrowName)
       return withTx('Repay', () =>

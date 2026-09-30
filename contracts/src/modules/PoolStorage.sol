@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {DataTypes} from "../libraries/DataTypes.sol";
 import {MathLib} from "../libraries/MathLib.sol";
 import {ReserveLib} from "../libraries/ReserveLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPool} from "../interfaces/IPool.sol";
 
 /// @title PoolStorage
@@ -41,6 +42,25 @@ abstract contract PoolStorage is IPool {
     mapping(bytes32 => uint256) internal _totalScaledDebt;
     mapping(bytes32 => uint256) internal _totalLockedCollateral;
 
+    mapping(bytes32 => uint8) internal _tokenDecimals;
+    mapping(address => bool) internal _listedTokens;
+
+    /// @dev Fixed collateral is held in custody and cannot fund loans or free-claim exits.
+    function _availableCash(bytes32 id) internal view returns (uint256) {
+        uint256 cash = IERC20(_reserves[id].tokenAddress).balanceOf(address(this));
+        uint256 reserved = _totalLockedCollateral[id];
+        return cash > reserved ? cash - reserved : 0;
+    }
+
+    /// @dev USD values use 18 decimals; token balances retain their native precision.
+    function _assetValue(bytes32 id, uint256 amount, uint256 price) internal view returns (uint256) {
+        return MathLib.mulDivNearest(amount, price, 10 ** uint256(_tokenDecimals[id]));
+    }
+
+    function _assetAmount(bytes32 id, uint256 value, uint256 price) internal view returns (uint256) {
+        return MathLib.mulDivNearest(value, 10 ** uint256(_tokenDecimals[id]), price);
+    }
+
     // ================================================================
     // Shared helpers
     // ================================================================
@@ -73,4 +93,3 @@ abstract contract PoolStorage is IPool {
         require(p.isOpen, "PoolStorage: position closed");
     }
 }
-

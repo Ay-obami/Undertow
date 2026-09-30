@@ -1,7 +1,6 @@
 # Solvency proof circuit — Week 4
 
-Proves **"my position's health factor is ≥ some threshold"** without
-revealing the underlying collateral or debt amounts on-chain.
+Standalone research demo: proves `collateralValueRay * liquidationThreshold >= thresholdRay * debtValueRay` for private, self-reported inputs and a Poseidon commitment. It does not authenticate actual Pool balances or solvency. No lending gate or current-solvency badge may rely on it.
 
 ## How it works
 
@@ -28,7 +27,7 @@ satisfies the threshold.
 
 All value-bearing inputs are range-checked (100 bits for RAY-scaled USD
 values, up to ~$1 trillion positions; 64 bits for the RAY-scaled ratios,
-which never exceed 1e18) so a malicious prover can't wrap the BN254 field
+which are constrained to 64 bits, not capped at 1e18) so a malicious prover can't wrap the BN254 field
 modulus to falsely satisfy the inequality.
 
 ## What's here
@@ -107,7 +106,13 @@ This prints the commitment (post it wherever the proof needs to be checked
 against later) and ready-to-paste Solidity calldata for
 `SolvencyVerifier.verifySolvency(pA, pB, pC, commitment, liquidationThreshold, thresholdRay)`.
 
-## Integration note (deliberately out of scope here)
+## Integration limits (excluded from supported lending scope)
+
+Proofs are not bound to a caller, account, position, chain, or observation time. Anyone can submit a copied proof; the event caller is not proof of position ownership. Zero debt satisfies the multiplication inequality, so this is not a general division-based health-factor claim. No freshness or replay policy exists. Existing Pool positions and balances remain public.
+
+Computing a commitment at borrow/repay time alone would not establish current solvency: interest, oracle prices, collateral changes, liquidation, and later repayment can invalidate a stored snapshot without regenerating it. Pool binding requires an explicit authenticated snapshot and freshness design, not only a Position field. That integration is not implemented.
+
+## Historical integration proposal
 
 This circuit and its verifier are self-contained — they prove/verify a
 claim about a `(collateralValue, debtValue)` pair behind a given

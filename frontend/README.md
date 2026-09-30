@@ -57,3 +57,14 @@ src/
 │   └── borrow/
 └── pages/        — MarketsPage, PositionsPage, BorrowPage
 ```
+
+
+## Deployment compatibility
+
+Set both `VITE_POOL_ADDRESS` and `VITE_POOL_CHAIN_ID` (114 for Coston2, 31337 for Anvil). The zero address disables protocol reads and writes. Writes require the wallet on that exact chain and a successful transaction receipt. Reads use the configured chain even when the wallet changes networks.
+
+This frontend requires a fresh Pool exposing `getUserPositionIds(address)`, `getReserveTokenDecimals(bytes32)`, and `getPositionDebt(address,uint256)`. Existing deployed pools are not upgraded by a frontend build. Rebuild only after recording the address of the compatible deployment; do not reuse an old address automatically.
+
+Position IDs are fetched at the same block as open position tuples, keeping repayment and health checks bound to original storage indexes. Token amounts use each reserve's decimals (0 through 18), and input beyond token precision is rejected. Health displays the contract's oracle-based boolean check; a numeric ratio is not available from the current Pool API. Debt reads preview accrued interest at the same block as the position. REPAY ALL sends the maximum repayment sentinel so the contract settles debt at execution time; token approval is capped at the current wallet balance, and the receipt-block open position IDs are checked to confirm closure before reporting full repayment. If interest accrues beyond available funds or allowance before execution, the transaction reverts; manual partial repayment remains available.
+
+Run `npm test` with Node 24, then `npm run build`. CI should run `npm ci`, `npm test`, and `npm run build` from this directory.

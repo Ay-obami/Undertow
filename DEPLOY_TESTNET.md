@@ -1,19 +1,9 @@
 # Deploying to Flare Testnet Coston2
 
 This covers deploying the protocol to Flare's Coston2 testnet, with FXRP and
-WFLR as reserves priced via FTSOv2, plus the optional ERC-4337 account layer
-for gasless deposit/repay.
+WFLR as reserves priced via FTSOv2, through direct-wallet transactions. ZK and ERC-4337 experiments are excluded from this deployment path.
 
-**A note on verification:** unlike `DEPLOY_LOCAL.md`, the steps below
-haven't been run live against Coston2 from this environment — the sandbox
-this was written in has no network access to Flare's RPC endpoints. What
-you get instead is careful code review of exactly what each script does
-(argument order, registry lookups, access control), the same level of
-scrutiny that already caught and fixed a real bug in these scripts (see
-`README.md`'s "Bug fixes from original" — the deploy scripts were capturing
-the wrong deployer address before a fix). Treat this as a correct,
-diligently-reviewed guide rather than a "we ran this and it worked" one, and
-if anything doesn't match reality, that's worth reporting back.
+**Verification status:** no live Coston2 deployment is established by this guide. Simulate first, verify chain ID 114, and inspect current registry addresses, token decimals, oracle prices, reserve configuration and owner addresses before broadcasting. Registry discovery does not guarantee compatibility or correct risk parameters. No mainnet deployment is covered.
 
 ## 1. Prerequisites
 
@@ -21,12 +11,11 @@ if anything doesn't match reality, that's worth reporting back.
 - A wallet with a private key you control (**not** one of Anvil's public
   test keys — this is a real, if low-value, testnet)
 - Testnet C2FLR from the [Coston2 faucet](https://faucet.flare.network/coston2)
-  — you'll need this for gas on every deploy/transaction below, plus extra
-  if you fund the paymasters in step 5
+  — you'll need this for core deployment and direct-wallet transaction gas.
 - (Optional, for trying deposits) Testnet FXRP — also available directly
   from the [Coston2 faucet](https://faucet.flare.network/coston2), no
   minting required. For the full mint-from-real-XRP flow instead, see
-  `scripts/fassets/README.md`.
+  `contracts/scripts/fassets/README.md`.
 
 ## 2. Configure your RPC endpoint and key
 
@@ -70,12 +59,10 @@ This script:
 1. Deploys `VariableInterestStrategy` and `FtsoOracle`
 2. Resolves the real FXRP token address via
    `ContractRegistry.getAssetManagerFXRP().fAsset()` and the real WFLR
-   address via `ContractRegistry.getWNat()` — no hardcoded addresses, so it
-   stays correct even if Flare's deployed addresses change
+   address via `ContractRegistry.getWNat()` — addresses discovered through the registry, whose current token compatibility must still be checked
 3. Registers FTSOv2 feed IDs: FXRP → `XRP/USD` (FXRP is 1:1 backed by XRP),
    WFLR → `FLR/USD`
-4. Deploys `Pool` and adds FXRP and WFLR as reserves (80%/65% LTV
-   respectively — see the script for full risk params)
+4. Deploys `Pool` and adds FXRP and WFLR as reserves (FXRP: 75% LTV, 80% liquidation threshold; WFLR: 65% LTV — see the script for full risk params)
 
 Expect output like:
 
@@ -90,7 +77,7 @@ Get testnet FXRP + C2FLR: https://faucet.flare.network/coston2
 ```
 
 **Copy every one of these addresses down** — you'll need `Pool` for the
-frontend and `FtsoOracle` for step 5.
+frontend; keep the oracle and token addresses for configuration verification.
 
 If this reverts with `DeployCoston2: FXRP not found in registry` or similar,
 Flare's contract registry doesn't have that entry on the RPC you're
@@ -111,42 +98,9 @@ cast call <POOL_ADDRESS> "getAllReserves()" --rpc-url coston2
 ```
 should return two tuples (FXRP and WFLR reserve configs).
 
-## 5. (Optional) Deploy the account layer for gasless transactions
+## 5. Experimental account layer excluded
 
-Only needed if you want deposit/repay to be sponsorable gaslessly (with the
-option to bill gas back in FXRP). Skip this if you just want the core
-lending pool.
-
-```bash
-FTSO_ORACLE=<FtsoOracle address from step 3> \
-VERIFYING_SIGNER=<address of the key that will approve gasless UserOps — defaults to your deployer if unset> \
-  forge script scripts/DeployAccountLayer.s.sol \
-  --rpc-url coston2 \
-  --broadcast \
-  --private-key 0xYOUR_PRIVATE_KEY
-```
-
-Read the `VERIFYING_SIGNER` note in the script before deploying for
-anything beyond a demo: it defaults to your deployer key if unset, which is
-fine to try this out, but in a real setup your backend's signing key
-(the one that decides which UserOps get sponsored) should be a *different*
-key than whatever deployed the contracts.
-
-This deploys:
-- A fresh `EntryPoint` (Coston2 has no canonical pre-deployed one for this
-  account-abstraction version — v0.9 is recent)
-- A `SimpleAccountFactory`
-- `VerifyingPaymaster` (sponsors gas for pre-approved operations)
-- `FxrpGasPaymaster` (same, but bills the gas back in FXRP afterward)
-- Funds both paymasters with a starting 0.05 C2FLR EntryPoint deposit each
-  (0.1 C2FLR total, on top of the deployment gas itself — make sure your
-  key has enough)
-
-**Both paymasters use OpenZeppelin's `Ownable2Step`.** Note the address
-that ends up as owner (your deployer, correctly — see the fix noted at the
-top of this doc) and keep its key safe: losing it means permanently losing
-the ability to call `setVerifyingSigner`, `withdrawTo`, etc. on these
-contracts.
+Do not include `DeployAccountLayer.s.sol` in the supported lending deployment. It deploys its own EntryPoint, factory and paymasters, but does not supply a working signer service, bundler, account workflow or verified `handleOps` lifecycle. FXRP recovery after execution is not guaranteed. The script's historical assertion that no canonical v0.9 EntryPoint exists on Coston2 was not verified and must not be used as an infrastructure fact. Experiments require separate local validation and a settlement design review before any public sponsor deposit.
 
 ## 6. Connect the frontend
 
@@ -159,6 +113,7 @@ cp .env.example .env
 Edit `.env`:
 ```
 VITE_POOL_ADDRESS=<Pool address from step 3>
+VITE_POOL_CHAIN_ID=114
 ```
 
 ```bash
@@ -191,7 +146,7 @@ under — no "m" prefix this time, unlike the local mocks).
 The faucet shortcut in steps 1/6 covers testing. For the full trust-minimized
 mint flow — reserve collateral from an agent, pay real XRP on the XRPL
 testnet, get a Flare Data Connector attestation, execute the mint — see
-`scripts/fassets/README.md`. That flow is genuinely how a user would
+`contracts/scripts/fassets/README.md`. That flow is genuinely how a user would
 acquire FXRP outside a testnet faucet (i.e. on mainnet), so it's worth
 running through at least once if the demo needs to show it, rather than
 relying on the faucet the whole time.
@@ -213,7 +168,15 @@ lagging on Coston2 for any reason, reads revert rather than silently using
 stale data — this is by design (see `src/oracle/FtsoOracle.sol`), not a
 bug, but it does mean occasional retries may be needed.
 
-**Paymaster `setVerifyingSigner` reverts with no reason / can't call
-owner-only functions.** Confirm you're calling from the actual deployer
-address from step 5, not a different key — `Ownable2Step` means there's no
-recovery if you've lost track of which key owns it.
+
+## Appendix: explicit experimental deployment opt-in
+
+The account deployment script aborts before configuration reads or broadcast unless `ENABLE_EXPERIMENTAL_ACCOUNT_LAYER=true`. Both paymaster deposits default to zero. For an isolated experiment, explicitly opt in:
+
+```bash
+ENABLE_EXPERIMENTAL_ACCOUNT_LAYER=true \
+FTSO_ORACLE=0x... VERIFYING_SIGNER=0x... \
+forge script scripts/DeployAccountLayer.s.sol --rpc-url coston2
+```
+
+This command simulates and does not broadcast. `EXPERIMENTAL_PAYMASTER_DEPOSIT` is an optional amount in native-token wei deposited into **each** paymaster; leave it unset for zero funding. Opt-in does not resolve the lifecycle or recovery limitations above.
