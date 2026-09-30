@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {DataTypes} from "../../src/libraries/DataTypes.sol";
 import {PoolTestBase} from "./PoolTestBase.sol";
 
 contract DirectionalRoundingTest is PoolTestBase {
@@ -90,6 +91,7 @@ contract DirectionalRoundingTest is PoolTestBase {
         _borrow(bob, WETH_ID, USDT_ID, amount, 0.05e18);
         assertGe(pool.getUserBorrowBalance(USDT_ID, bob), amount);
         assertGt(pool.getPosition(bob, 1).scaledDebt, 0);
+        assertTrue(pool.checkPositionHealth(bob, 1));
         assertEq(usdt.balanceOf(bob) - beforeTokens, amount);
     }
 
@@ -100,5 +102,47 @@ contract DirectionalRoundingTest is PoolTestBase {
         pool.withdraw(USDT_ID, claim);
         assertEq(pool.getUserDepositBalance(USDT_ID, alice), 0);
         assertEq(pool.getReserve(USDT_ID).totalDeposits, 0);
+    }
+
+    function test_PartialCollateralReleaseFollowsScaledDebtRemoved() public {
+        _repayFully();
+        oracle.setPrice(wethFeed, 1e18);
+        _borrow(bob, WETH_ID, USDT_ID, 20, 0.05e18);
+        DataTypes.Position memory beforePosition = pool.getPosition(bob, 1);
+        vm.startPrank(bob);
+        usdt.approve(address(pool), 8);
+        pool.repay(WETH_ID, USDT_ID, 1, 8);
+        vm.stopPrank();
+        DataTypes.Position memory afterPosition = pool.getPosition(bob, 1);
+        uint256 removed = beforePosition.scaledDebt - afterPosition.scaledDebt;
+        assertEq(
+            beforePosition.collateralLocked - afterPosition.collateralLocked,
+            beforePosition.collateralLocked * removed / beforePosition.scaledDebt
+        );
+    }
+
+    function test_FullDisplayedCollateralCanBeLockedAndReturned() public {
+        _repayFully();
+        _deposit(bob, USDT_ID, address(usdt), 21);
+        assertEq(pool.getUserDepositBalance(USDT_ID, bob), 21);
+        oracle.setPrice(wethFeed, 1.3e18);
+        _borrow(bob, USDT_ID, WETH_ID, 12, 0.05e18);
+        assertEq(pool.getUserDepositBalance(USDT_ID, bob), 0);
+        assertEq(pool.getPosition(bob, 1).collateralLocked, 21);
+        vm.startPrank(bob);
+        weth.approve(address(pool), type(uint256).max);
+        pool.repay(USDT_ID, WETH_ID, 1, type(uint256).max);
+        vm.stopPrank();
+        assertEq(pool.getUserBorrowBalance(WETH_ID, bob), 0);
+        assertEq(pool.getUserDepositBalance(USDT_ID, bob), 21);
+    }
+
+    function test_ZeroRoundedCollateralRejected() public {
+        _repayFully();
+        uint256 beforeTokens = usdt.balanceOf(bob);
+        vm.prank(bob);
+        vm.expectRevert("BorrowModule: zero collateral");
+        pool.borrow(WETH_ID, USDT_ID, 1, 0.05e18);
+        assertEq(usdt.balanceOf(bob), beforeTokens);
     }
 }

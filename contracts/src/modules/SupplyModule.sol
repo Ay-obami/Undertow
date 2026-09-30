@@ -31,7 +31,8 @@ abstract contract SupplyModule is PoolStorage {
         reserve.assertSupplyCap(amount);
 
         // Compute scaled deposit for this user
-        uint256 scaled = MathLib.toScaled(amount, reserve.supplyLiquidityIndex);
+        uint256 scaled = MathLib.toScaledDown(amount, reserve.supplyLiquidityIndex);
+        require(scaled > 0, "SupplyModule: amount below index precision");
         _scaledDeposits[reserveId][msg.sender] += scaled;
 
         _totalScaledDeposits[reserveId] += scaled;
@@ -56,7 +57,9 @@ abstract contract SupplyModule is PoolStorage {
         uint256 userReal = MathLib.toReal(_scaledDeposits[reserveId][msg.sender], reserve.supplyLiquidityIndex);
         require(userReal >= amount, "SupplyModule: insufficient balance");
 
-        uint256 scaledBurnt = MathLib.toScaled(amount, reserve.supplyLiquidityIndex);
+        uint256 scaledBurnt = amount == userReal
+            ? _scaledDeposits[reserveId][msg.sender]
+            : MathLib.toScaledUp(amount, reserve.supplyLiquidityIndex);
         _scaledDeposits[reserveId][msg.sender] -= scaledBurnt;
 
         _totalScaledDeposits[reserveId] -= scaledBurnt;
