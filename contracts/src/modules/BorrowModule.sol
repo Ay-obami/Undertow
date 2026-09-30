@@ -90,7 +90,8 @@ abstract contract BorrowModule is PoolStorage {
         _syncReserveTotals(borrowId);
         require(borrowReserve.totalBorrows <= borrowReserve.borrowCap, "ReserveLib: borrow cap exceeded");
         require(
-            MathLib.utilizationRate(borrowReserve.totalBorrows, borrowReserve.totalDeposits) <= DataTypes.MAX_UTILIZATION,
+            MathLib.utilizationRate(borrowReserve.totalBorrows, borrowReserve.totalDeposits)
+                <= DataTypes.MAX_UTILIZATION,
             "BorrowModule: utilization ceiling"
         );
 
