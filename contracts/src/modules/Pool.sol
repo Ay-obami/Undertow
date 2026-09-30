@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {DataTypes} from "../libraries/DataTypes.sol";
 import {MathLib} from "../libraries/MathLib.sol";
 import {ReserveLib} from "../libraries/ReserveLib.sol";
@@ -20,7 +21,7 @@ import {LiquidationModule} from "./LiquidationModule.sol";
 ///
 ///         Inheritance order (MRO right-to-left):
 ///         Pool → LiquidationModule → BorrowModule → SupplyModule → PoolStorage → IPool
-contract Pool is SupplyModule, BorrowModule, LiquidationModule {
+contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard {
     using ReserveLib for DataTypes.ReserveData;
     using MathLib for uint256;
 
@@ -39,23 +40,23 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule {
     // ================================================================
 
     /// test
-    function deposit(bytes32 reserveId, uint256 amount) external override {
+    function deposit(bytes32 reserveId, uint256 amount) external override nonReentrant {
         _deposit(reserveId, amount);
     }
 
-    function withdraw(bytes32 reserveId, uint256 amount) external override {
+    function withdraw(bytes32 reserveId, uint256 amount) external override nonReentrant {
         _withdraw(reserveId, amount);
     }
 
-    function borrow(bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPercent) external override {
+    function borrow(bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPercent) external override nonReentrant {
         _borrow(collateralId, borrowId, amount, bufferPercent);
     }
 
-    function repay(bytes32 collateralId, bytes32 borrowId, uint256 positionId, uint256 repayAmount) external override {
+    function repay(bytes32 collateralId, bytes32 borrowId, uint256 positionId, uint256 repayAmount) external override nonReentrant {
         _repay(collateralId, borrowId, positionId, repayAmount);
     }
 
-    function liquidate(address user, uint256 positionId) external override {
+    function liquidate(address user, uint256 positionId) external override nonReentrant {
         _liquidate(user, positionId);
     }
 
