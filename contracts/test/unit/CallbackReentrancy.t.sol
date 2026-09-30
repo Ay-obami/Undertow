@@ -104,9 +104,17 @@ contract CallbackReentrancyTest is PoolTestBase {
         else pool.liquidate(bob, 0);
     }
 
-    function testFuzz_AllActionsBlockCrossReserveCallbacks(uint8 rawOuter, uint8 rawNested) public {
-        uint256 outer = bound(uint256(rawOuter), 0, 4);
-        uint256 nested = bound(uint256(rawNested), 0, 4);
+    function test_AllActionPairsBlockCrossReserveCallbacks() public {
+        uint256 snapshot = vm.snapshotState();
+        for (uint256 outer; outer < 5; ++outer) {
+            for (uint256 nested; nested < 5; ++nested) {
+                _assertBlockedPair(outer, nested);
+                assertTrue(vm.revertToState(snapshot));
+            }
+        }
+    }
+
+    function _assertBlockedPair(uint256 outer, uint256 nested) internal {
         if (outer == 4) oracle.setPrice(wethFeed, 100e18);
         uint256 beforeClaim = pool.getUserDepositBalance(WETH_ID, address(callbackToken));
         uint256 beforeDebt = pool.getUserBorrowBalance(WETH_ID, address(callbackToken));
@@ -153,6 +161,6 @@ contract CallbackReentrancyTest is PoolTestBase {
         pool.repay(WBTC_ID, WETH_ID, 0, 0.1e18);
         vm.prank(address(callbackToken));
         pool.liquidate(alice, 0);
-        assertFalse(pool.getPosition(alice, 0).isOpen);
+        assertEq(pool.getUserPositions(alice).length, 0);
     }
 }
