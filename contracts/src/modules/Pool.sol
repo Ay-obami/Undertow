@@ -19,8 +19,7 @@ import {LiquidationModule} from "./LiquidationModule.sol";
 ///           • owns reserve administration (addReserve / setActive…)
 ///           • exposes view functions
 ///
-///         Inheritance order (MRO right-to-left):
-///         Pool → LiquidationModule → BorrowModule → SupplyModule → PoolStorage → IPool
+///         A shared ReentrancyGuard protects all five user action entry points.
 contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard {
     using ReserveLib for DataTypes.ReserveData;
     using MathLib for uint256;
@@ -48,11 +47,19 @@ contract Pool is SupplyModule, BorrowModule, LiquidationModule, ReentrancyGuard 
         _withdraw(reserveId, amount);
     }
 
-    function borrow(bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPercent) external override nonReentrant {
+    function borrow(bytes32 collateralId, bytes32 borrowId, uint256 amount, uint256 bufferPercent)
+        external
+        override
+        nonReentrant
+    {
         _borrow(collateralId, borrowId, amount, bufferPercent);
     }
 
-    function repay(bytes32 collateralId, bytes32 borrowId, uint256 positionId, uint256 repayAmount) external override nonReentrant {
+    function repay(bytes32 collateralId, bytes32 borrowId, uint256 positionId, uint256 repayAmount)
+        external
+        override
+        nonReentrant
+    {
         _repay(collateralId, borrowId, positionId, repayAmount);
     }
 
