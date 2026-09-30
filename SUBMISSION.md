@@ -1,3 +1,5 @@
+> Archived hackathon draft. Claims and TODOs below reflect the original submission planning, not current deployment evidence. ZK proves only self-reported arithmetic; the paymaster tests do not execute an EntryPoint `handleOps` lifecycle. Neither experiment is in the supported lending scope. See `SCOPE.md` and the current README.
+
 # FXRP Private Lending Market — Submission
 
 *Draft — items marked `[TODO]` need something only you can supply (a live

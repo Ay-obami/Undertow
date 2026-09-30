@@ -85,8 +85,13 @@ contract FtsoOracle is IPriceOracle {
         (uint256 value, int8 decimals, uint64 timestamp) = ftsoV2.getFeedById(feedId);
 
         require(value > 0, "FtsoOracle: non-positive price");
+        require(timestamp != 0, "FtsoOracle: round not complete");
+        require(timestamp <= block.timestamp, "FtsoOracle: future timestamp");
         require(block.timestamp - timestamp <= stalePeriod, "FtsoOracle: price stale");
 
-        return MathLib.ftsoToRay(value, decimals);
+        require(decimals <= 95, "FtsoOracle: unsupported decimals");
+        uint256 priceRay = MathLib.ftsoToRay(value, decimals);
+        require(priceRay > 0, "FtsoOracle: price below precision");
+        return priceRay;
     }
 }

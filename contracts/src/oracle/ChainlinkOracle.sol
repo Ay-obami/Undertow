@@ -40,10 +40,14 @@ contract ChainlinkOracle is IPriceOracle {
         require(answer > 0, "ChainlinkOracle: non-positive price");
         require(updatedAt != 0, "ChainlinkOracle: round not complete");
         require(answeredInRound >= roundId, "ChainlinkOracle: stale round");
+        require(updatedAt <= block.timestamp, "ChainlinkOracle: future timestamp");
         require(block.timestamp - updatedAt <= stalePeriod, "ChainlinkOracle: price stale");
 
         uint8 dec = feed.decimals();
+        require(dec <= 95, "ChainlinkOracle: unsupported decimals");
         // Normalise to RAY (1e18) — fixes the decimal mismatch bug in the original
-        return MathLib.chainlinkToRay(answer, dec);
+        uint256 priceRay = MathLib.chainlinkToRay(answer, dec);
+        require(priceRay > 0, "ChainlinkOracle: price below precision");
+        return priceRay;
     }
 }

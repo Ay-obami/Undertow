@@ -92,7 +92,8 @@ contract AggregateAccountingTest is PoolTestBase {
     function test_LockedCollateralStaysFixedWhileFreeDepositsAccrue() public {
         _openTwoBorrowers();
         _deposit(alice, WBTC_ID, address(wbtc), 10e18);
-        _borrow(alice, WBTC_ID, WETH_ID, 15e18, 0.05e18);
+        // Fixed WETH collateral remains in custody; borrow only from unreserved cash.
+        _borrow(alice, WBTC_ID, WETH_ID, 10e18, 0.05e18);
         uint256 locked = pool.getPosition(alice, 0).collateralLocked + pool.getPosition(bob, 0).collateralLocked;
         vm.warp(block.timestamp + 180 days);
         // A small deposit persists accrued indexes and totals without changing locks.

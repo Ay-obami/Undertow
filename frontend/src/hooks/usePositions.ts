@@ -3,23 +3,23 @@ import { useConfig, useAccount } from 'wagmi'
 import { fetchUserPositions } from '../services/poolService'
 import { fetchAllReserveData } from '../services/poolService'
 import type { PositionInfo, RawPosition, RawReserveData } from '../types'
+import { bindPositionIds } from '../lib/frontendSafety'
+import { POOL_ADDRESS, POOL_CHAIN_ID, POOL_CONFIGURED } from '../lib/wagmi'
 import { toNumber, computeBorrowRate, RAY } from '../lib/math'
 
 function transformPosition(
   raw: RawPosition,
   index: number,
   reserveMap: Map<`0x${string}`, RawReserveData>,
+  debtAmount: bigint,
 ): PositionInfo {
   const collateralReserve = reserveMap.get(raw.collateralReserveId)
   const borrowReserve = reserveMap.get(raw.borrowReserveId)
 
-  // realDebt = scaledDebt × borrowLiquidityIndex / RAY
-  const realDebt = borrowReserve
-    ? toNumber((raw.scaledDebt * borrowReserve.borrowLiquidityIndex) / RAY)
-    : toNumber(raw.scaledDebt)
+  const realDebt = toNumber(debtAmount, borrowReserve?.decimals)
 
   // collateralLocked is static — no transform
-  const collateralLocked = toNumber(raw.collateralLocked)
+  const collateralLocked = toNumber(raw.collateralLocked, collateralReserve?.decimals)
 
   // Borrow APY comes from the reserve, not stored in position
   let borrowAPY = 0
@@ -46,6 +46,7 @@ function transformPosition(
 
   return {
     id: index,
+    debtAmount,
     collateralAsset,
     borrowAsset,
     realDebt,
@@ -60,8 +61,8 @@ export function usePositions() {
   const { address } = useAccount()
 
   return useQuery({
-    queryKey: ['positions', address],
-    enabled: !!address,
+    queryKey: ['positions', POOL_CHAIN_ID, POOL_ADDRESS, address],
+    enabled: !!address && POOL_CONFIGURED,
     queryFn: async () => {
       const [rawPositions, rawReserves] = await Promise.all([
         fetchUserPositions(config, address!),
@@ -71,8 +72,8 @@ export function usePositions() {
       const reserveMap = new Map<`0x${string}`, RawReserveData>()
       rawReserves.forEach((r) => reserveMap.set(r.id, r))
 
-      return rawPositions
-        .map((pos, i) => transformPosition(pos, i, reserveMap))
+      return bindPositionIds(rawPositions.positions, rawPositions.ids)
+        .map(({ position, id }, index) => transformPosition(position, id, reserveMap, rawPositions.debts[index]))
         .filter((p) => p.realDebt > 0) // skip empty/closed positions
     },
     staleTime: 20_000,

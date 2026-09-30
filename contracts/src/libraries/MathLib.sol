@@ -17,12 +17,18 @@ library MathLib {
 
     function rayMul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0 || b == 0) return 0;
-        return (a * b + RAY / 2) / RAY; // rounded half-up
+        return mulDivNearest(a, b, RAY);
     }
 
     function rayDiv(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b != 0, "MathLib: div by zero");
-        return (a * RAY + b / 2) / b; // rounded half-up
+        return mulDivNearest(a, RAY, b);
+    }
+
+    /// @notice Full-precision multiplication/division, rounded half-up.
+    function mulDivNearest(uint256 a, uint256 b, uint256 denominator) internal pure returns (uint256) {
+        uint256 result = OZMath.mulDiv(a, b, denominator);
+        return result + (mulmod(a, b, denominator) >= denominator - denominator / 2 ? 1 : 0);
     }
 
     // ================================================================
@@ -34,7 +40,7 @@ library MathLib {
     ///                     e.g. 5 % APY → 0.05e18 / SECONDS_PER_YEAR
     function compoundIndex(uint256 currentIndex, uint256 rate, uint256 timeElapsed) internal pure returns (uint256) {
         if (timeElapsed == 0) return currentIndex;
-        uint256 linearAccumulator = RAY + (rate * timeElapsed) / SECONDS_PER_YEAR;
+        uint256 linearAccumulator = RAY + OZMath.mulDiv(rate, timeElapsed, SECONDS_PER_YEAR);
         return rayMul(currentIndex, linearAccumulator);
     }
 
@@ -131,4 +137,3 @@ library MathLib {
         }
     }
 }
-

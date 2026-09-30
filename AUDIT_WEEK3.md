@@ -1,3 +1,5 @@
+> Historical hackathon record. This document describes the original Week 3 review and tests at that time, not a comprehensive independent audit or verification of the current revision. Later accounting, oracle and callback changes require their own validation. See `SCOPE.md`.
+
 # Liquidation re-audit — Week 3
 
 Re-verification of the four bugs the PRD lists as previously self-audited,

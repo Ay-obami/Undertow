@@ -6,6 +6,7 @@ import {PoolTestBase} from "./PoolTestBase.sol";
 /// @dev Returns success while burning a configurable part of transferFrom.
 /// Plain transfer remains exact so these tests isolate incoming accounting.
 contract ShortReceiptToken {
+    uint8 public constant decimals = 18;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
     uint256 public feeBps;

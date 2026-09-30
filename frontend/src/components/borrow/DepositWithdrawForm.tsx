@@ -1,6 +1,8 @@
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { parseUnits } from 'viem'
+import { formatUnits } from 'viem'
+import { parseTokenAmount } from '../../lib/frontendSafety'
 import type { ReserveInfo } from '../../types'
 import { useContract } from '../../hooks/useContract'
 import { TxStatusBar } from '../common'
@@ -32,14 +34,14 @@ export function DepositWithdrawForm({
     staleTime: 10_000,
   })
 
-  const walletNum = walletBalance ? Number(walletBalance) / 1e18 : 0
+  const walletNum = walletBalance ? Number(formatUnits(walletBalance, reserve.decimals)) : 0
 
   const handleSubmit = async () => {
     if (!address || !amount || Number(amount) <= 0) return
     setIsBusy(true)
     resetTxState()
     try {
-      const parsed = parseUnits(amount, 18)
+      const parsed = parseTokenAmount(amount, reserve.decimals)
       if (mode === 'deposit') {
         await deposit(reserve.name, parsed, reserve.tokenAddress, address)
       } else {
@@ -47,8 +49,8 @@ export function DepositWithdrawForm({
       }
       setAmount('')
       onSuccess?.()
-    } catch {
-      // error handled in hook
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Transaction failed')
     } finally {
       setIsBusy(false)
     }
@@ -56,7 +58,7 @@ export function DepositWithdrawForm({
 
   const setMax = () => {
     if (mode === 'deposit' && walletBalance) {
-      setAmount((Number(walletBalance) / 1e18).toFixed(6))
+      setAmount(formatUnits(walletBalance, reserve.decimals))
     }
   }
 
